@@ -16,11 +16,11 @@ export async function generateContentProxy(params: {
   return response.json();
 }
 
-export async function generateTTS(text: string, voice: string): Promise<string> {
+export async function generateTTS(text: string, voice: string, lang: string): Promise<string> {
   const response = await fetch('/api/tts', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, voice }),
+    body: JSON.stringify({ text, voice, lang }),
   });
   if (!response.ok) throw new Error('TTS request failed');
   const data = await response.json();

@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { BookOpen, HelpCircle, ArrowLeft, GraduationCap, X, Library, FileText, Loader2 } from 'lucide-react';
+import { BookOpen, HelpCircle, ArrowLeft, GraduationCap, Library, FileText, Loader2 } from 'lucide-react';
 import { generateContentProxy } from '../lib/ai';
 import { useLanguage } from '../lib/language';
+import { PixelButton } from '../components/ui/Pixel';
+import { PixelModal } from '../components/ui/PixelModal';
 
 interface BibliotekaDoc {
   filename: string;
@@ -58,7 +60,7 @@ export function StudentClassroom({ onBack, onStartLearning, lessonText, setLesso
         const base64 = base64Data.split(',')[1];
         const mimeType = file.type || 'application/octet-stream';
         const result = await generateContentProxy({
-          model: 'gpt-4o',
+          model: 'openai/gpt-oss-120b',
           contents: [{
             role: 'user',
             parts: [
@@ -128,16 +130,12 @@ export function StudentClassroom({ onBack, onStartLearning, lessonText, setLesso
       )}
 
       <div className="absolute top-10 right-10 flex gap-6 z-20">
-        <button onClick={onBack} className="px-6 py-4 bg-red-600 text-white border-4 border-red-800 hover:bg-red-500 shadow-[4px_4px_0_rgba(0,0,0,0.5)] flex items-center gap-2 transition-all hover:translate-y-1 hover:shadow-none">
+        <PixelButton variant="danger" size="lg" onClick={onBack}>
           <ArrowLeft size={20} /> {t('back')}
-        </button>
-        <button
-          onClick={onStartLearning}
-          disabled={!lessonText}
-          className={`px-8 py-4 border-4 shadow-[4px_4px_0_rgba(0,0,0,0.5)] flex items-center gap-2 transition-all hover:translate-y-1 hover:shadow-none ${lessonText ? 'bg-green-600 border-green-800 text-white hover:bg-green-500' : 'bg-gray-400 border-gray-600 text-gray-300 opacity-50 cursor-not-allowed'}`}
-        >
+        </PixelButton>
+        <PixelButton variant="primary" size="lg" onClick={onStartLearning} disabled={!lessonText}>
           <GraduationCap size={20} /> {t('teachMe')}
-        </button>
+        </PixelButton>
       </div>
 
       <AnimatePresence>
@@ -146,64 +144,52 @@ export function StudentClassroom({ onBack, onStartLearning, lessonText, setLesso
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/90 flex items-center justify-center z-[100] p-4 sm:p-8"
+            className="absolute inset-0 bg-black/60 flex items-center justify-center z-[100] p-4 sm:p-8"
           >
-            <motion.div
-              initial={{ y: 50, scale: 0.95 }}
-              animate={{ y: 0, scale: 1 }}
-              className="bg-[#f2e6d9] border-8 border-[#5d4037] w-full max-w-5xl rounded-sm shadow-[16px_16px_0_rgba(0,0,0,0.6)] flex flex-col md:flex-row overflow-hidden max-h-[90vh]"
+            <PixelModal
+              onClose={() => setActivePopup(null)}
+              maxWidthClass="max-w-5xl"
+              tabs={[
+                { id: 'upload', label: t('uploadFile'), icon: <BookOpen size={18} /> },
+                { id: 'biblioteka', label: t('library'), icon: <Library size={18} /> },
+              ]}
+              activeTab={popupTab}
+              onTabChange={(id) => setPopupTab(id as 'upload' | 'biblioteka')}
             >
-              <div className="hidden md:flex flex-col justify-around py-8 px-2 bg-[#d7c4b1] border-r-4 border-[#5d4037] w-12">
-                {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 border-2 border-gray-600 shadow-inner" />)}
-              </div>
-
-              <div className="flex-1 flex flex-col p-6 md:p-10 font-pixel overflow-y-auto custom-scrollbar">
-                <div className="flex justify-between items-center mb-6 border-b-4 border-[#5d4037] pb-4">
-                  <div className="flex gap-2">
-                    <button onClick={() => setPopupTab('upload')} className={`px-6 py-3 font-silkscreen text-lg flex items-center gap-2 border-4 transition-all ${popupTab === 'upload' ? 'bg-[#5d4037] border-[#3d2b1f] text-white' : 'bg-white/40 border-[#5d4037]/30 text-[#5d4037] hover:bg-white/70'}`}>
-                      <BookOpen size={18} /> {t('uploadFile')}
-                    </button>
-                    <button onClick={() => setPopupTab('biblioteka')} className={`px-6 py-3 font-silkscreen text-lg flex items-center gap-2 border-4 transition-all ${popupTab === 'biblioteka' ? 'bg-[#5d4037] border-[#3d2b1f] text-white' : 'bg-white/40 border-[#5d4037]/30 text-[#5d4037] hover:bg-white/70'}`}>
-                      <Library size={18} /> {t('library')}
-                    </button>
-                  </div>
-                  <button onClick={() => setActivePopup(null)} className="bg-[#5d4037] text-white p-2 hover:bg-red-700 transition-colors"><X size={32} /></button>
-                </div>
-
                 {popupTab === 'upload' && (
                   <div className="flex flex-col lg:flex-row gap-8 flex-1">
                     <div className="flex-[2] flex flex-col gap-6">
                       <div className="flex gap-4">
-                        <button onClick={() => fileInputRef.current?.click()} className="flex-1 px-6 py-4 bg-[#3498db] text-white font-silkscreen hover:bg-[#2980b9] border-4 border-[#1a5276] transition-all shadow-[4px_4px_0_#1a5276] active:shadow-none active:translate-y-1 flex items-center justify-center gap-3" disabled={isExtracting}>
+                        <PixelButton variant="secondary" size="lg" className="flex-1 justify-center" onClick={() => fileInputRef.current?.click()} disabled={isExtracting}>
                           {isExtracting ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}><GraduationCap size={24} /></motion.div> : <BookOpen size={24} />}
                           {isExtracting ? t('analyzing') : t('uploadPdfImage')}
-                        </button>
+                        </PixelButton>
                         <input type="file" className="hidden" ref={fileInputRef} accept="application/pdf,image/*,text/plain" onChange={handleFileUpload} />
                       </div>
                       <div className="flex-1 flex flex-col min-h-[300px]">
                         <div className="flex justify-between items-end mb-2">
-                          <label className="text-sm font-bold text-[#5d4037] uppercase tracking-widest flex items-center gap-2">
+                          <label className="text-sm font-bold text-[#5e411b] uppercase tracking-widest flex items-center gap-2">
                             <div className="w-2 h-2 bg-red-600 rounded-full" /> {t('journalContent')}
                           </label>
-                          <span className="text-[10px] text-gray-500">{lessonText.length} {t('characters')}</span>
+                          <span className="text-[10px] text-[#8b5a33]/70">{lessonText.length} {t('characters')}</span>
                         </div>
-                        <textarea value={lessonText} onChange={(e) => setLessonText(e.target.value)} className="w-full flex-1 bg-[#fffcf5] border-4 border-[#5d4037] p-6 text-lg md:text-xl text-[#3d2b1f] resize-none focus:outline-none focus:border-[#d35400] transition-colors leading-relaxed custom-scrollbar shadow-inner" placeholder={t('pasteLessonText')} />
+                        <textarea value={lessonText} onChange={(e) => setLessonText(e.target.value)} className="w-full flex-1 bg-[#f9f2e3] border-4 border-[#c2964e] p-6 text-lg md:text-xl text-[#3d2b1f] resize-none focus:outline-none focus:border-[#8b5a33] transition-colors leading-relaxed custom-scrollbar shadow-inner" placeholder={t('pasteLessonText')} />
                       </div>
                     </div>
                     <div className="flex-1 flex flex-col gap-8">
-                      <div className="bg-[#e8decb] border-4 border-[#5d4037] p-6 shadow-md">
-                        <h3 className="font-silkscreen text-xl mb-4 text-[#5d4037] border-b-2 border-[#5d4037]/20 pb-2">{t('lectureLevel')}</h3>
+                      <div className="bg-[#d4bb72]/40 border-4 border-[#c2964e] p-6">
+                        <h3 className="font-retro text-xl mb-4 text-[#5e411b] border-b-2 border-[#c2964e]/40 pb-2">{t('lectureLevel')}</h3>
                         <div className="flex flex-col gap-3">
                           {(['basic', 'medium', 'advanced'] as const).map((level) => (
-                            <button key={level} onClick={() => setLearningLevel(level)} className={`w-full px-4 py-3 border-4 font-silkscreen text-sm transition-all text-left flex justify-between items-center ${learningLevel === level ? 'bg-[#5d4037] border-[#3d2b1f] text-white translate-x-2' : 'bg-white/50 border-[#5d4037]/30 text-[#5d4037]/60 hover:bg-white/80'}`}>
+                            <button key={level} onClick={() => setLearningLevel(level)} className={`w-full px-4 py-3 border-4 font-retro text-sm transition-all text-left flex justify-between items-center ${learningLevel === level ? 'bg-[#8b5a33] border-[#5e411b] text-white translate-x-2' : 'bg-white/40 border-[#c2964e]/50 text-[#5e411b]/70 hover:bg-white/70'}`}>
                               {level === 'basic' ? t('basicLevel') : level === 'medium' ? t('mediumLevel') : t('advancedLevel')}
                               {learningLevel === level && <GraduationCap size={16} />}
                             </button>
                           ))}
                         </div>
                       </div>
-                      <div className="bg-[#d4e6f1] border-4 border-[#2e86c1] p-6 shadow-md">
-                        <div className="flex items-center gap-2 mb-3 text-[#1b4f72]"><HelpCircle size={20} /><h4 className="font-silkscreen text-sm">{t('instructionsTitle')}</h4></div>
+                      <div className="bg-[#d4e6f1] border-4 border-[#2e86c1] p-6">
+                        <div className="flex items-center gap-2 mb-3 text-[#1b4f72]"><HelpCircle size={20} /><h4 className="font-retro text-sm">{t('instructionsTitle')}</h4></div>
                         <ul className="text-[10px] font-pixel text-[#1b4f72] space-y-2">
                           <li>• {t('uploadPdfOrWrite')}</li>
                           <li>• {t('aiWillAnalyze')}</li>
@@ -211,9 +197,9 @@ export function StudentClassroom({ onBack, onStartLearning, lessonText, setLesso
                         </ul>
                       </div>
                       <div className="mt-auto pt-6">
-                        <button onClick={() => setActivePopup(null)} className="w-full px-8 py-5 bg-[#27ae60] text-white font-silkscreen text-2xl hover:bg-[#2ecc71] border-4 border-[#1e8449] shadow-[6px_6px_0_#1e8449] active:shadow-none active:translate-y-1 transition-all">
+                        <PixelButton variant="primary" size="lg" className="w-full justify-center text-2xl" onClick={() => setActivePopup(null)}>
                           {t('saveAndGo')}
-                        </button>
+                        </PixelButton>
                       </div>
                     </div>
                   </div>
@@ -222,33 +208,32 @@ export function StudentClassroom({ onBack, onStartLearning, lessonText, setLesso
                 {popupTab === 'biblioteka' && (
                   <div className="flex flex-col flex-1">
                     {isLoadingDocs ? (
-                      <div className="flex-1 flex items-center justify-center text-[#5d4037]">
+                      <div className="flex-1 flex items-center justify-center text-[#5e411b]">
                         <Loader2 size={40} className="animate-spin mr-3" />
-                        <span className="font-silkscreen text-xl">{t('loading')}</span>
+                        <span className="font-retro text-xl">{t('loading')}</span>
                       </div>
                     ) : documents.length === 0 ? (
-                      <div className="flex-1 flex flex-col items-center justify-center text-[#5d4037] opacity-50">
+                      <div className="flex-1 flex flex-col items-center justify-center text-[#5e411b] opacity-50">
                         <Library size={64} className="mb-4" />
-                        <p className="font-silkscreen text-xl">{t('libraryEmpty')}</p>
+                        <p className="font-retro text-xl">{t('libraryEmpty')}</p>
                         <p className="font-pixel text-sm mt-2">{t('professorNeedsToAdd')}</p>
                       </div>
                     ) : (
                       <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-2">
                         {documents.map((doc) => (
-                          <button key={doc.filename} onClick={() => loadFromBiblioteka(doc)} disabled={isExtracting} className="w-full text-left bg-[#fffcf5] border-4 border-[#5d4037] p-5 hover:border-[#d35400] hover:bg-[#fff8ee] transition-all flex items-center gap-4 group disabled:opacity-50">
-                            <FileText size={32} className="text-[#8b5a33] flex-shrink-0 group-hover:text-[#d35400]" />
+                          <button key={doc.filename} onClick={() => loadFromBiblioteka(doc)} disabled={isExtracting} className="w-full text-left bg-[#f9f2e3] border-4 border-[#c2964e] p-5 hover:border-[#8b5a33] transition-all flex items-center gap-4 group disabled:opacity-50">
+                            <FileText size={32} className="text-[#c2964e] flex-shrink-0 group-hover:text-[#8b5a33]" />
                             <div className="flex-1 min-w-0">
-                              <p className="font-silkscreen text-xl text-[#5d4037] truncate">{doc.name}</p>
+                              <p className="font-retro text-xl text-[#5e411b] truncate">{doc.name}</p>
                             </div>
-                            <span className="font-silkscreen text-sm text-[#27ae60] flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">{t('load')} →</span>
+                            <span className="font-retro text-sm text-green-700 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">{t('load')} →</span>
                           </button>
                         ))}
                       </div>
                     )}
                   </div>
                 )}
-              </div>
-            </motion.div>
+            </PixelModal>
           </motion.div>
         )}
       </AnimatePresence>

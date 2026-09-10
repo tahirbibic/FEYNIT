@@ -5,16 +5,14 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  optimizeDeps: {
-    exclude: ['@google/generative-ai'],
-  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '.'),
     },
   },
   server: {
-    allowedHosts: 'all',
+    port: 5173,
+    allowedHosts: true,
     hmr: process.env.DISABLE_HMR !== 'true',
     proxy: {
       '/api': {

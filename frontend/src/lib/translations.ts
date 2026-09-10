@@ -30,6 +30,10 @@ export const translations = {
     viewAnnouncements: 'POGLEDAJ OBAVEŠTENJA',
     openStore: 'OTVORI PRODAVNICU',
     viewLeaderboard: 'POGLEDAJ TOP LISTU',
+    boardStoreTitle: 'Prodavnica',
+    boardStoreDesc: 'Sa IQ Points, otključaj nove studente! IQ Points zarađuješ kao profesor!',
+    boardLeaderboardTitle: 'Top Lista',
+    boardLeaderboardDesc: 'Uporedi se sa ostalim korisnicima ove aplikacije!',
 
     // Classroom
     lessonAdded: 'LEKCIJA USPEŠNO DODATA!',
@@ -108,6 +112,7 @@ export const translations = {
 
     // Analytics
     lectureAnalytics: 'ANALITIKA PREDAVANJA',
+    analyticsSubtitle: 'Pregled tvog učinka i napretka',
     writingReport: 'AI PIŠE IZVEŠTAJ...',
     pedagogicalRating: 'Pedagoški Rejting',
     confusionFinalLabel: 'Zbunjenost',
@@ -115,6 +120,17 @@ export const translations = {
     whatWasGood: 'ŠTA JE BILO DOBRO',
     forImprovement: 'ZA POBOLJŠANJE',
     backToSchool: 'NAZAD U ŠKOLU',
+    totalScore: 'UKUPAN SKOR',
+    averageScore: 'PROSEČAN SKOR',
+    bestScore: 'NAJBOLJI SKOR',
+    totalSessions: 'SESIJA',
+    scoreTrend: 'TREND SKORA',
+    notEnoughData: 'NEMA DOVOLJNO PODATAKA',
+    notEnoughDataDesc: 'Završi još predavanja da bi video trend svog napretka.',
+    recentActivity: 'NEDAVNA AKTIVNOST',
+    vsAverage: 'U ODNOSU NA PROSEK',
+    thisSession: 'OVA SESIJA',
+    performanceBreakdown: 'ANALIZA UČINKA',
 
     // LearningMode
     exit: 'IZAĐI',
@@ -160,6 +176,10 @@ export const translations = {
     viewAnnouncements: 'VIEW ANNOUNCEMENTS',
     openStore: 'OPEN STORE',
     viewLeaderboard: 'VIEW LEADERBOARD',
+    boardStoreTitle: 'Store',
+    boardStoreDesc: 'Spend your IQ Points to unlock new students! You earn IQ Points by teaching as a professor!',
+    boardLeaderboardTitle: 'Leaderboard',
+    boardLeaderboardDesc: 'Compare yourself with the other users of this app!',
 
     // Classroom
     lessonAdded: 'LESSON ADDED SUCCESSFULLY!',
@@ -238,6 +258,7 @@ export const translations = {
 
     // Analytics
     lectureAnalytics: 'LECTURE ANALYTICS',
+    analyticsSubtitle: 'Overview of your performance and progress',
     writingReport: 'AI IS WRITING REPORT...',
     pedagogicalRating: 'Pedagogical Rating',
     confusionFinalLabel: 'Confusion',
@@ -245,6 +266,17 @@ export const translations = {
     whatWasGood: 'WHAT WENT WELL',
     forImprovement: 'FOR IMPROVEMENT',
     backToSchool: 'BACK TO SCHOOL',
+    totalScore: 'TOTAL SCORE',
+    averageScore: 'AVERAGE SCORE',
+    bestScore: 'BEST SCORE',
+    totalSessions: 'SESSIONS',
+    scoreTrend: 'SCORE TREND',
+    notEnoughData: 'NOT ENOUGH DATA YET',
+    notEnoughDataDesc: 'Finish more lessons to see your progress trend.',
+    recentActivity: 'RECENT ACTIVITY',
+    vsAverage: 'VS YOUR AVERAGE',
+    thisSession: 'THIS SESSION',
+    performanceBreakdown: 'PERFORMANCE BREAKDOWN',
 
     // LearningMode
     exit: 'EXIT',

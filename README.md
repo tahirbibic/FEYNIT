@@ -1,12 +1,12 @@
 # feynit
 
-Educational game based on the Feynman Technique. Teach AI students to deepen your own understanding. Built with React, Express, Supabase, and OpenAI.
+Educational game based on the Feynman Technique. Teach AI students to deepen your own understanding. Built with React, Express, Supabase, and Groq.
 
 ## Tech Stack
 
 - **Frontend**: React 19, TypeScript, Vite, Tailwind CSS 4
 - **Backend**: Express 4, Node.js, TypeScript
-- **AI**: OpenAI GPT-4o (text), OpenAI TTS (voice), pdfjs-dist (PDF extraction)
+- **AI**: Groq GPT-OSS 120B (text), Groq Orpheus TTS (voice, English), Azure AI Speech (voice, Serbian), pdfjs-dist (PDF extraction)
 - **Database**: Supabase (auth, documents, leaderboard)
 
 ## Setup
@@ -27,9 +27,9 @@ cd ../frontend && npm install
 
 **`backend/.env`** — create this file:
 ```env
-GITHUB_TOKEN=your_github_pat_token
-OPENAI_MODEL=gpt-4o
-OPENAI_API_KEY=your_openai_api_key
+GROQ_API_KEY=your_groq_api_key
+AZURE_SPEECH_KEY=your_azure_speech_key
+AZURE_SPEECH_REGION=your_azure_speech_region
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your_supabase_anon_key
 PORT=3001

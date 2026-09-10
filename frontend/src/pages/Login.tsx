@@ -21,18 +21,23 @@ export function Login({ onLoginSuccess }: LoginProps) {
     setLoading(true);
     try {
       if (mode === 'register') {
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: { data: { display_name: name } },
         });
         if (signUpError) throw signUpError;
-        setRegistered(true);
+        if (signUpData.session && signUpData.user) {
+          const displayName = signUpData.user.user_metadata?.display_name || name;
+          onLoginSuccess(displayName, signUpData.user.id);
+        } else {
+          setRegistered(true);
+        }
       } else {
         const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
         if (data.user) {
-          const displayName = data.user.user_metadata?.display_name || email.split('@')[0];
+          const displayName = data.user.user_metadata?.display_name || data.user.user_metadata?.full_name || data.user.user_metadata?.name || email.split('@')[0];
           onLoginSuccess(displayName, data.user.id);
         }
       }

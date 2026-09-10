@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../lib/language';
+import { PixelButton } from '../components/ui/Pixel';
 
 interface GreenboardMenuProps {
   onBack: () => void;
@@ -23,9 +24,9 @@ export function GreenboardMenu({ onBack, onTeach, onTest }: GreenboardMenuProps)
         />
         <div id="greenboard-fallback" className="absolute inset-0 hidden flex-col items-center justify-center text-white text-center p-8 bg-[#3a2818]">
           <div className="mt-8 flex gap-4">
-            <button onClick={onBack} className="px-4 py-2 bg-red-600 text-white">{t('back')}</button>
-            <button onClick={onTest} className="px-4 py-2 bg-green-600 text-white">{t('handOutExams')}</button>
-            <button onClick={onTeach} className="px-4 py-2 bg-blue-600 text-white">{t('teachLessonBtn')}</button>
+            <PixelButton variant="danger" onClick={onBack}>{t('back')}</PixelButton>
+            <PixelButton variant="primary" onClick={onTest}>{t('handOutExams')}</PixelButton>
+            <PixelButton variant="secondary" onClick={onTeach}>{t('teachLessonBtn')}</PixelButton>
           </div>
         </div>
 
@@ -45,12 +46,9 @@ export function GreenboardMenu({ onBack, onTeach, onTest }: GreenboardMenuProps)
           <span className="sr-only">Predaj lekciju</span>
         </button>
 
-        <button
-          onClick={onBack}
-          className="absolute top-4 left-4 px-6 py-3 bg-red-600 text-white font-silkscreen hover:bg-red-500 border-4 border-red-800 shadow-[4px_4px_0_#4a0000] text-xl z-20"
-        >
+        <PixelButton variant="danger" size="lg" onClick={onBack} className="absolute top-4 left-4 z-20 text-xl">
           {t('backToDesk')}
-        </button>
+        </PixelButton>
       </div>
     </div>
   );

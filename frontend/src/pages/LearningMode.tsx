@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Mic, MicOff, Send, Volume2, VolumeX, ArrowLeft } from 'lucide-react';
 import { generateContentProxy, generateTTS } from '../lib/ai';
 import { useLanguage } from '../lib/language';
+import { PixelButton, PixelPanel } from '../components/ui/Pixel';
 
 interface LearningModeProps {
   lessonText: string;
@@ -39,6 +40,7 @@ export function LearningMode({ lessonText, onEndLearning, learningLevel }: Learn
 
   const speak = async (text: string) => {
     if (isMutedRef.current) return;
+    if (lang === 'sr') return; // Professor stays silent in Serbian — no TTS voice for this mode.
 
     const cleanedText = text.replace(/\[.*?\]/g, '').trim();
     if (!cleanedText) return;
@@ -48,7 +50,7 @@ export function LearningMode({ lessonText, onEndLearning, learningLevel }: Learn
 
     try {
       setTeacherState('pointing');
-      const base64Audio = await generateTTS(cleanedText, 'onyx');
+      const base64Audio = await generateTTS(cleanedText, 'professor-en', lang);
       setTeacherState('talking');
       await playMp3Audio(base64Audio);
       setTeacherState('neutral');
@@ -57,13 +59,15 @@ export function LearningMode({ lessonText, onEndLearning, learningLevel }: Learn
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(cleanedText);
-        utterance.lang = 'sr-RS';
+        utterance.lang = 'en-US'; // this catch branch only runs for English — Serbian returns early above
         utterance.onstart = () => setTeacherState('talking');
-        utterance.onend = () => {
+        const onSynthEnd = () => {
           setTeacherState('neutral');
           isSpeakingRef.current = false;
           if (isListeningRef.current) { try { recognitionRef.current?.start(); } catch (_) {} }
         };
+        utterance.onend = onSynthEnd;
+        utterance.onerror = onSynthEnd;
         window.speechSynthesis.speak(utterance);
         return;
       }
@@ -220,7 +224,7 @@ PRAVILA ZA PROFESORA:
     try {
       chatHistoryRef.current.push({ role: 'user', parts: [{ text: userMessage }] });
       const result = await generateContentProxy({
-        model: 'gemini-2.0-flash',
+        model: 'openai/gpt-oss-120b',
         systemInstruction: getSystemInstruction(),
         contents: chatHistoryRef.current
       });
@@ -286,12 +290,9 @@ PRAVILA ZA PROFESORA:
       )}
 
       <div className="absolute top-6 left-6 z-20">
-        <button
-          onClick={onEndLearning}
-          className="px-6 py-3 bg-red-600/80 hover:bg-red-600 text-white font-silkscreen border-4 border-red-900 shadow-lg flex items-center gap-2 transition-all active:scale-95"
-        >
+        <PixelButton variant="danger" size="md" onClick={onEndLearning}>
           <ArrowLeft size={20} /> {t('exit')}
-        </button>
+        </PixelButton>
       </div>
 
       <div className="absolute bottom-0 inset-x-0 h-1/3 z-20 bg-gradient-to-t from-black via-black/80 to-transparent flex flex-col justify-end p-8">
@@ -306,7 +307,7 @@ PRAVILA ZA PROFESORA:
                   exit={{ opacity: 0 }}
                   className={`flex ${m.sender === 'teacher' ? 'justify-start' : 'justify-end'}`}
                 >
-                  <div className={`px-3 py-2 rounded-lg text-sm max-w-[85%] leading-snug ${m.sender === 'teacher' ? 'bg-yellow-900/80 text-yellow-100' : 'bg-blue-900/80 text-blue-100'}`}>
+                  <div className={`px-3 py-2 border-2 text-sm max-w-[85%] leading-snug ${m.sender === 'teacher' ? 'bg-[#854d0e] border-[#422006] text-yellow-50' : 'bg-[#1e3a8a] border-[#0f1f4d] text-blue-50'}`}>
                     {m.text}
                   </div>
                 </motion.div>
@@ -314,14 +315,11 @@ PRAVILA ZA PROFESORA:
             </AnimatePresence>
           </div>
 
-          <div className="flex gap-4 items-center bg-white/10 backdrop-blur-md p-4 border-2 border-white/20 rounded-xl">
+          <PixelPanel variant="board" className="flex gap-4 items-center !p-4">
             {sttSupported ? (
-              <button
-                onClick={toggleListening}
-                className={`p-4 rounded-lg transition-all ${isListening ? 'bg-red-600 animate-pulse' : 'bg-white/10 hover:bg-white/20'}`}
-              >
-                {isListening ? <MicOff className="text-white" /> : <Mic className="text-white" />}
-              </button>
+              <PixelButton variant={isListening ? 'danger' : 'wood'} size="icon" active={isListening} onClick={toggleListening} className={isListening ? 'animate-pulse' : ''}>
+                {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+              </PixelButton>
             ) : (
               <div className="p-4 opacity-40">
                 <MicOff className="text-white" />
@@ -339,15 +337,14 @@ PRAVILA ZA PROFESORA:
               />
             </div>
 
-            <button
-              onClick={handleSend}
-              disabled={isLoading || !inputText.trim()}
-              className="p-4 bg-yellow-500 rounded-lg hover:bg-yellow-400 disabled:opacity-30 transition-all active:scale-95"
-            >
-              <Send className="text-black" />
-            </button>
+            <PixelButton variant="primary" size="icon" onClick={handleSend} disabled={isLoading || !inputText.trim()}>
+              <Send size={18} />
+            </PixelButton>
 
-            <button
+            <PixelButton
+              variant="secondary"
+              size="icon"
+              active={!isMuted}
               onClick={() => {
                 const next = !isMuted;
                 isMutedRef.current = next;
@@ -359,11 +356,10 @@ PRAVILA ZA PROFESORA:
                   isSpeakingRef.current = false;
                 }
               }}
-              className="p-4 bg-white/10 rounded-lg text-white hover:bg-white/20"
             >
-              {isMuted ? <VolumeX /> : <Volume2 />}
-            </button>
-          </div>
+              {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+            </PixelButton>
+          </PixelPanel>
         </div>
       </div>
     </div>

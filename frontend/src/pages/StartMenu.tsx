@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
 import { useLanguage } from '../lib/language';
+import { PixelButton, PixelPanel } from '../components/ui/Pixel';
 
 interface StartMenuProps {
   onEnterProfessor: () => void;
@@ -104,22 +105,23 @@ export function StartMenu({ onEnterProfessor, onEnterStudent, onStore, onLeaderb
                 initial={{ y: -100, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 100, opacity: 0 }}
-                className="relative bg-gradient-to-b from-gray-300 to-gray-500 p-1 border-4 border-gray-600 shadow-[8px_8px_0_rgba(0,0,0,0.4)]"
               >
-                <div className="absolute top-2 left-2 w-2 h-2 bg-gray-700 rounded-full" />
-                <div className="absolute top-2 right-2 w-2 h-2 bg-gray-700 rounded-full" />
-                <div className="absolute bottom-2 left-2 w-2 h-2 bg-gray-700 rounded-full" />
-                <div className="absolute bottom-2 right-2 w-2 h-2 bg-gray-700 rounded-full" />
-                <div className="bg-[#1a2c21] border-2 border-gray-600 p-8 flex flex-col items-center gap-6">
-                  <h2 className="text-4xl font-silkscreen text-white border-b-4 border-white/20 pb-4 w-full text-center">{t('professorTitle')}</h2>
-                  <p className="text-xl font-pixel text-green-400 text-center max-w-sm leading-relaxed">
-                    {t('professorSubtext')}
-                  </p>
-                  <div className="flex gap-4">
-                    <button onClick={handleProfessorContinue} className="px-10 py-4 bg-green-600 text-white border-4 border-green-800 hover:bg-green-500 shadow-[4px_4px_0_rgba(0,0,0,0.3)] text-2xl transition-all">{t('continue')}</button>
-                    <button onClick={handleBack} className="px-6 py-4 bg-red-600 text-white border-4 border-red-800 hover:bg-red-500 shadow-[4px_4px_0_rgba(0,0,0,0.3)] text-xl transition-all">{t('back')}</button>
+                <PixelPanel variant="wood" className="!p-1 relative">
+                  <div className="absolute top-2 left-2 w-2 h-2 bg-[#3d2b1f] border border-[#1a0f08]" />
+                  <div className="absolute top-2 right-2 w-2 h-2 bg-[#3d2b1f] border border-[#1a0f08]" />
+                  <div className="absolute bottom-2 left-2 w-2 h-2 bg-[#3d2b1f] border border-[#1a0f08]" />
+                  <div className="absolute bottom-2 right-2 w-2 h-2 bg-[#3d2b1f] border border-[#1a0f08]" />
+                  <div className="bg-[#1a2c21] border-4 border-[#5e411b] p-8 flex flex-col items-center gap-6">
+                    <h2 className="text-4xl font-retro text-white border-b-4 border-white/20 pb-4 w-full text-center">{t('professorTitle')}</h2>
+                    <p className="text-xl font-pixel text-green-400 text-center max-w-sm leading-relaxed">
+                      {t('professorSubtext')}
+                    </p>
+                    <div className="flex gap-4">
+                      <PixelButton variant="primary" size="lg" onClick={handleProfessorContinue}>{t('continue')}</PixelButton>
+                      <PixelButton variant="danger" size="lg" onClick={handleBack}>{t('back')}</PixelButton>
+                    </div>
                   </div>
-                </div>
+                </PixelPanel>
               </motion.div>
             </div>
           )}
@@ -132,22 +134,23 @@ export function StartMenu({ onEnterProfessor, onEnterStudent, onStore, onLeaderb
                 initial={{ y: -100, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 100, opacity: 0 }}
-                className="relative bg-gradient-to-b from-gray-300 to-gray-500 p-1 border-4 border-gray-600 shadow-[8px_8px_0_rgba(0,0,0,0.4)]"
               >
-                <div className="absolute top-2 left-2 w-2 h-2 bg-gray-700 rounded-full" />
-                <div className="absolute top-2 right-2 w-2 h-2 bg-gray-700 rounded-full" />
-                <div className="absolute bottom-2 left-2 w-2 h-2 bg-gray-700 rounded-full" />
-                <div className="absolute bottom-2 right-2 w-2 h-2 bg-gray-700 rounded-full" />
-                <div className="bg-[#1a2c21] border-2 border-gray-600 p-8 flex flex-col items-center gap-6">
-                  <h2 className="text-4xl font-silkscreen text-white border-b-4 border-white/20 pb-4 w-full text-center">{t('studentTitle')}</h2>
-                  <p className="text-xl font-pixel text-green-400 text-center max-w-sm leading-relaxed">
-                    {t('studentSubtext')}
-                  </p>
-                  <div className="flex gap-4">
-                    <button onClick={handleStudentContinue} className="px-10 py-4 bg-green-600 text-white border-4 border-green-800 hover:bg-green-500 shadow-[4px_4px_0_rgba(0,0,0,0.3)] text-2xl transition-all">{t('continue')}</button>
-                    <button onClick={handleBack} className="px-6 py-4 bg-red-600 text-white border-4 border-red-800 hover:bg-red-500 shadow-[4px_4px_0_rgba(0,0,0,0.3)] text-xl transition-all">{t('back')}</button>
+                <PixelPanel variant="wood" className="!p-1 relative">
+                  <div className="absolute top-2 left-2 w-2 h-2 bg-[#3d2b1f] border border-[#1a0f08]" />
+                  <div className="absolute top-2 right-2 w-2 h-2 bg-[#3d2b1f] border border-[#1a0f08]" />
+                  <div className="absolute bottom-2 left-2 w-2 h-2 bg-[#3d2b1f] border border-[#1a0f08]" />
+                  <div className="absolute bottom-2 right-2 w-2 h-2 bg-[#3d2b1f] border border-[#1a0f08]" />
+                  <div className="bg-[#1a2c21] border-4 border-[#5e411b] p-8 flex flex-col items-center gap-6">
+                    <h2 className="text-4xl font-retro text-white border-b-4 border-white/20 pb-4 w-full text-center">{t('studentTitle')}</h2>
+                    <p className="text-xl font-pixel text-green-400 text-center max-w-sm leading-relaxed">
+                      {t('studentSubtext')}
+                    </p>
+                    <div className="flex gap-4">
+                      <PixelButton variant="primary" size="lg" onClick={handleStudentContinue}>{t('continue')}</PixelButton>
+                      <PixelButton variant="danger" size="lg" onClick={handleBack}>{t('back')}</PixelButton>
+                    </div>
                   </div>
-                </div>
+                </PixelPanel>
               </motion.div>
             </div>
           )}
@@ -186,18 +189,31 @@ export function StartMenu({ onEnterProfessor, onEnterStudent, onStore, onLeaderb
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
                 className="relative w-full max-w-4xl aspect-[1.8/1] shadow-2xl"
               >
-                <button
+                <PixelButton
+                  variant="danger"
+                  size="icon"
                   onClick={() => setShowBoard(false)}
-                  className="absolute -top-4 -right-4 bg-red-600 p-3 text-white border-4 border-red-900 hover:bg-red-500 z-50 shadow-xl transition-all hover:scale-110 active:scale-95"
+                  className="absolute -top-4 -right-4 z-50"
                 >
-                  <X size={32} strokeWidth={3} />
-                </button>
+                  <X size={28} strokeWidth={3} />
+                </PixelButton>
                 <img
-                  src="/assets/pano-meni.jpg"
+                  src="/assets/pano.png"
                   alt="Pano Menu"
                   className="w-full h-full object-contain pointer-events-none"
                   style={{ imageRendering: 'pixelated' }}
                 />
+
+                {/* pano.png ships blank — the note text baked into the old pano-meni.jpg is redrawn here */}
+                <div className="absolute left-[9%] top-[40%] w-[36%] h-[45%] flex flex-col items-center text-center px-2 pointer-events-none">
+                  <h3 className="font-retro text-base md:text-xl text-[#2d1b0d] mb-2">{t('boardStoreTitle')}</h3>
+                  <p className="font-pixel text-[10px] md:text-sm text-[#3d2b1f] leading-snug">{t('boardStoreDesc')}</p>
+                </div>
+                <div className="absolute right-[9%] top-[40%] w-[36%] h-[45%] flex flex-col items-center text-center px-2 pointer-events-none">
+                  <h3 className="font-retro text-base md:text-xl text-[#2d1b0d] mb-2">{t('boardLeaderboardTitle')}</h3>
+                  <p className="font-pixel text-[10px] md:text-sm text-[#3d2b1f] leading-snug">{t('boardLeaderboardDesc')}</p>
+                </div>
+
                 <button
                   onClick={() => { setShowBoard(false); onStore(); }}
                   className="absolute left-[8%] top-[10%] w-[40%] h-[80%] bg-transparent hover:bg-yellow-400/5 cursor-pointer transition-colors border-2 border-transparent hover:border-yellow-400/20 group"

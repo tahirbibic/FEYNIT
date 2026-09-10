@@ -6,6 +6,8 @@ import { getIqLevel } from '../components/IqLevel';
 import { SessionRecord } from '../App';
 import { Student } from '../data/students';
 import { useLanguage } from '../lib/language';
+import { PixelButton } from '../components/ui/Pixel';
+import { PixelModal } from '../components/ui/PixelModal';
 
 interface ContentPdf {
   filename: string;
@@ -77,7 +79,7 @@ export function Classroom({ onBack, onGoToGreenboard, onHandOutExam, lessonText,
         const base64 = base64Data.split(',')[1];
         const mimeType = file.type || 'application/octet-stream';
         const result = await generateContentProxy({
-          model: 'gemini-1.5-flash-latest',
+          model: 'openai/gpt-oss-120b',
           contents: [{
             role: 'user',
             parts: [
@@ -136,9 +138,9 @@ export function Classroom({ onBack, onGoToGreenboard, onHandOutExam, lessonText,
         />
         <div id="classroom-fallback" className="absolute inset-0 hidden flex-col items-center justify-center text-white text-center p-8 bg-[#3a2818]">
           <div className="mt-8 flex gap-4">
-            <button onClick={onBack} className="px-4 py-2 bg-red-600 text-white">{t('goBack')}</button>
-            <button onClick={onGoToGreenboard} className="px-4 py-2 bg-green-600 text-white">{t('goToBoard')}</button>
-            <button onClick={() => setActivePopup('folder')} className="px-4 py-2 bg-yellow-600 text-white">Upload PDF</button>
+            <PixelButton variant="danger" onClick={onBack}>{t('goBack')}</PixelButton>
+            <PixelButton variant="primary" onClick={onGoToGreenboard}>{t('goToBoard')}</PixelButton>
+            <PixelButton variant="wood" onClick={() => setActivePopup('folder')}>Upload PDF</PixelButton>
           </div>
         </div>
 
@@ -180,33 +182,18 @@ export function Classroom({ onBack, onGoToGreenboard, onHandOutExam, lessonText,
               exit={{ opacity: 0, scale: 0.9 }}
               className="absolute inset-0 bg-black/60 flex items-center justify-center z-50 p-8"
             >
-              <div className="bg-[#ebd09b] border-8 border-[#c2964e] w-full max-w-4xl h-[80vh] p-0 text-[#5e411b] relative shadow-[12px_12px_0_rgba(0,0,0,0.5)] flex flex-col overflow-hidden">
-                <button onClick={() => setActivePopup(null)} className="absolute top-2 right-4 text-4xl font-bold hover:text-red-600 transition-colors z-[60]">×</button>
-
+              <PixelModal
+                onClose={() => setActivePopup(null)}
+                tabs={activePopup === 'folder' ? [
+                  { id: 'new', label: t('newLesson'), icon: <FileText size={18} /> },
+                  { id: 'library', label: t('library'), icon: <Library size={18} /> },
+                  { id: 'history', label: <>{t('historyTab')} ({history.length})</>, icon: <History size={18} /> },
+                ] : undefined}
+                activeTab={folderTab}
+                onTabChange={(id) => setFolderTab(id as 'new' | 'library' | 'history')}
+              >
                 {activePopup === 'folder' && (
-                  <div className="flex flex-col h-full font-pixel">
-                    <div className="flex bg-[#d4bb72] border-b-8 border-[#c2964e]">
-                      <button
-                        onClick={() => setFolderTab('new')}
-                        className={`px-6 py-4 font-silkscreen text-base flex items-center gap-2 ${folderTab === 'new' ? 'bg-[#ebd09b] border-b-8 border-[#ebd09b] -mb-2' : 'hover:bg-[#e4ca8d]'}`}
-                      >
-                        <FileText size={18} /> {t('newLesson')}
-                      </button>
-                      <button
-                        onClick={() => setFolderTab('library')}
-                        className={`px-6 py-4 font-silkscreen text-base flex items-center gap-2 ${folderTab === 'library' ? 'bg-[#ebd09b] border-b-8 border-[#ebd09b] -mb-2' : 'hover:bg-[#e4ca8d]'}`}
-                      >
-                        <Library size={18} /> {t('library')}
-                      </button>
-                      <button
-                        onClick={() => setFolderTab('history')}
-                        className={`px-6 py-4 font-silkscreen text-base flex items-center gap-2 ${folderTab === 'history' ? 'bg-[#ebd09b] border-b-8 border-[#ebd09b] -mb-2' : 'hover:bg-[#e4ca8d]'}`}
-                      >
-                        <History size={18} /> {t('historyTab')} ({history.length})
-                      </button>
-                    </div>
-
-                    <div className="p-8 flex-1 flex flex-col overflow-y-auto">
+                  <>
                       {folderTab === 'new' && (
                         <div className="flex flex-col h-full">
                           <h2 className="text-3xl font-silkscreen mb-4 flex items-center gap-2">
@@ -326,19 +313,18 @@ export function Classroom({ onBack, onGoToGreenboard, onHandOutExam, lessonText,
                           )}
                         </div>
                       )}
-                    </div>
-                  </div>
+                  </>
                 )}
 
                 {activePopup === 'report' && (
-                  <div className="flex flex-col h-full font-pixel p-8">
-                    <h2 className="text-3xl font-silkscreen mb-8 border-b-4 border-[#c2964e] pb-2 flex items-center gap-2">
+                  <div className="flex flex-col h-full">
+                    <h2 className="text-3xl font-retro mb-8 border-b-4 border-[#c2964e] pb-2 flex items-center gap-2">
                       <ScrollText /> {t('journalTitle')} {activeStudent.name.toUpperCase()}
                     </h2>
                     <div className="flex gap-10">
                       <div className="w-1/3 flex flex-col items-center border-r-4 border-[#c2964e] pr-8">
                         <div className="w-48 h-48 bg-[#f9f2e3] border-8 border-[#c2964e] mb-6 flex items-center justify-center overflow-hidden shadow-lg">
-                          <img src={activeStudent.avatar} alt={activeStudent.name} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
+                          <img src={activeStudent.avatar} alt={activeStudent.name} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                         </div>
                         <h3 className="text-3xl font-bold font-silkscreen text-center">{t('levelLabel')} <span className="text-red-600">{studentLevel}</span></h3>
                         <p className="text-xl font-pixel text-[#8b5a33] mb-6 uppercase tracking-wider">{getIqLevel(iqPoints, lang)}</p>
@@ -370,7 +356,7 @@ export function Classroom({ onBack, onGoToGreenboard, onHandOutExam, lessonText,
                     </div>
                   </div>
                 )}
-              </div>
+              </PixelModal>
             </motion.div>
           )}
         </AnimatePresence>

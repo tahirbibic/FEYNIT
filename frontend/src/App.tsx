@@ -88,10 +88,9 @@ export default function App() {
         })();
       }, 1000);
     }
-  }, [iqPoints, studentLevel, history, unlockedStudents, activeStudentId]);
+  }, [iqPoints, studentLevel, history, unlockedStudents, activeStudentId, userId]);
 
   const handleLoginSuccess = async (name: string, uid: string) => {
-    setUsername(name);
     setUserId(uid);
 
     const { data } = await supabase
@@ -100,13 +99,32 @@ export default function App() {
       .eq('user_id', uid)
       .single();
 
-    if (data) {
-      setIqPoints(data.iq_points);
-      setStudentLevel(data.student_level);
-      setUnlockedStudents(data.unlocked_students ?? ['marko']);
-      setActiveStudentId(data.active_student_id ?? 'marko');
-      setHistory(data.history ?? []);
-    }
+    // Prefer the stored username (set during registration) over the auth fallback
+    const displayName = data?.username || name;
+    const currentIq = data?.iq_points ?? 60;
+    const currentLevel = data?.student_level ?? 1;
+    const currentUnlocked = data?.unlocked_students ?? ['marko'];
+    const currentActive = data?.active_student_id ?? 'marko';
+    const currentHistory = data?.history ?? [];
+
+    setUsername(displayName);
+    setIqPoints(currentIq);
+    setStudentLevel(currentLevel);
+    setUnlockedStudents(currentUnlocked);
+    setActiveStudentId(currentActive);
+    setHistory(currentHistory);
+
+    // Always upsert on login — creates row for new users and keeps IQ in sync
+    void supabase.from('user_stats').upsert({
+      user_id: uid,
+      username: displayName,
+      iq_points: currentIq,
+      student_level: currentLevel,
+      unlocked_students: currentUnlocked,
+      active_student_id: currentActive,
+      history: currentHistory,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' });
 
     setScene('start');
   };
@@ -115,15 +133,6 @@ export default function App() {
     const newIq = iqPoints + earned;
     setIqPoints(newIq);
     if (passed && earned > 20) setStudentLevel(prev => prev + 1);
-
-    if (username) {
-      fetch('/api/leaderboard/upsert', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, score: newIq }),
-      }).catch(() => {});
-    }
-
     setScene('classroom');
   };
 
@@ -204,6 +213,7 @@ export default function App() {
             confusion={lastConfusion}
             onBack={() => setScene('classroom')}
             lessonText={lessonText}
+            history={history}
             onSave={(record) => setHistory(prev => [record, ...prev])}
           />
         )}
@@ -239,7 +249,7 @@ export default function App() {
         )}
 
         {(scene === 'start' || scene === 'store') && (
-          <div className="absolute bottom-[4%] right-[2%] z-50">
+          <div className="absolute bottom-[1%] right-[2%] z-50">
             <IqLevel iqPoints={iqPoints} />
           </div>
         )}

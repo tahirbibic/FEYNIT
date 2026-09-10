@@ -5,6 +5,7 @@ import { Message } from '../App';
 import { Student } from '../data/students';
 import { generateContentProxy, generateTTS } from '../lib/ai';
 import { useLanguage } from '../lib/language';
+import { PixelButton, PixelPanel, PixelProgressBar } from '../components/ui/Pixel';
 
 declare global {
   interface Window {
@@ -48,6 +49,7 @@ export function TeachingMode({ lessonText, activeStudent, onEndTeaching }: Teach
 
   const speak = async (text: string) => {
     if (!isTtsEnabled) return;
+    if (lang === 'sr') return; // No Serbian TTS voice for characters — stays silent, text-only.
     const cleanedText = text.replace(/\[CONFUSION:\s*\d+\]/g, '').trim();
     if (!cleanedText) return;
 
@@ -56,7 +58,7 @@ export function TeachingMode({ lessonText, activeStudent, onEndTeaching }: Teach
 
     try {
       if (studentState === 'neutral') setStudentState('thinking');
-      const base64Audio = await generateTTS(cleanedText, activeStudent.voice);
+      const base64Audio = await generateTTS(cleanedText, activeStudent.voice, lang);
       setStudentState('talking');
       await playMp3Audio(base64Audio);
       setStudentState('neutral');
@@ -65,13 +67,15 @@ export function TeachingMode({ lessonText, activeStudent, onEndTeaching }: Teach
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(cleanedText);
-        utterance.lang = 'sr-RS';
+        utterance.lang = 'en-US'; // this catch branch only runs for English — Serbian returns early above
         utterance.onstart = () => setStudentState('talking');
-        utterance.onend = () => {
+        const onSynthEnd = () => {
           setStudentState('neutral');
           isSpeakingRef.current = false;
           if (isListeningRef.current) { try { recognitionRef.current?.start(); } catch (_) {} }
         };
+        utterance.onend = onSynthEnd;
+        utterance.onerror = onSynthEnd;
         window.speechSynthesis.speak(utterance);
         return;
       }
@@ -109,6 +113,7 @@ export function TeachingMode({ lessonText, activeStudent, onEndTeaching }: Teach
   const getSystemInstruction = () =>
     `Ti si virtualni učenik ${activeStudent.name.toUpperCase()} u edukativnoj video igri.
 ${activeStudent.prompt}
+${activeStudent.learningPrompt ?? ''}
 Tvoj zadatak je da naučiš novu temu od profesora.
 Materijal koji profesor treba da ti objasni je:
 """
@@ -224,7 +229,7 @@ Pravila ponašanja:
       setApiHistory(newHistory);
 
       const result = await generateContentProxy({
-        model: 'gemini-2.0-flash',
+        model: 'openai/gpt-oss-120b',
         systemInstruction: getSystemInstruction(),
         contents: newHistory
       });
@@ -249,36 +254,42 @@ Pravila ponašanja:
   };
 
   const confusionColor = confusion < 30 ? '#4ade80' : confusion < 70 ? '#facc15' : '#ef4444';
+  const imageKey = activeStudent.imageKey ?? activeStudent.id;
+  // 'thinking'/'talking' come from studentState; otherwise show confused above 50% confusion, idle below.
+  const imageState = studentState === 'talking' ? 'talking' : studentState === 'thinking' ? 'thinking' : confusion > 50 ? 'confused' : 'idle';
 
   return (
     <div className="absolute inset-0 w-full h-full overflow-hidden font-sans">
+      {/* Classroom scene */}
       <div className="absolute inset-0 z-0">
+        <img src="/assets/classroom_bg.png" alt="Classroom" className="w-full h-full object-cover" />
+      </div>
+
+      {/* Character portrait, state-driven — layered on top of the classroom background */}
+      <div className="absolute inset-0 z-[1] flex items-end justify-center pointer-events-none">
         <AnimatePresence mode="wait">
           <motion.img
-            key={studentState}
+            key={imageState}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            src={
-              studentState === 'thinking' ? '/assets/kid_teach_thinking.jpg'
-              : studentState === 'talking' ? '/assets/kid_teach_talking.jpg'
-              : '/assets/kid_teach.jpg'
-            }
-            alt="Student"
-            className="w-full h-full object-cover"
+            src={`/assets/${imageKey}_${imageState}.png`}
+            alt={activeStudent.name}
+            className="h-[85%] w-auto object-contain"
+            style={{ imageRendering: 'pixelated' }}
           />
         </AnimatePresence>
       </div>
 
       <div className="absolute top-4 left-4 z-20 flex gap-3">
-        <button
-          onClick={() => onEndTeaching(confusion, messages)}
-          className="px-5 py-2.5 bg-red-600/80 hover:bg-red-600 text-white border-2 border-red-900 shadow-lg flex items-center gap-2 transition-all active:scale-95 rounded-lg text-sm font-semibold"
-        >
+        <PixelButton variant="danger" size="sm" onClick={() => onEndTeaching(confusion, messages)}>
           <ArrowLeft size={16} /> {t('endLecture')}
-        </button>
-        <button
+        </PixelButton>
+        <PixelButton
+          variant="secondary"
+          size="sm"
+          active={isTtsEnabled}
           onClick={() => {
             const next = !isTtsEnabled;
             setIsTtsEnabled(next);
@@ -289,23 +300,17 @@ Pravila ponašanja:
               isSpeakingRef.current = false;
             }
           }}
-          className={`px-4 py-2.5 border-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all active:scale-95 ${isTtsEnabled ? 'bg-blue-600/80 border-blue-800 text-white' : 'bg-black/40 border-white/20 text-white/50'}`}
         >
           {isTtsEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
           {isTtsEnabled ? t('studentVoiceOn') : t('studentVoiceOff')}
-        </button>
+        </PixelButton>
       </div>
 
-      <div className="absolute top-4 right-4 z-20 bg-black/60 backdrop-blur-sm border-2 border-white/20 rounded-xl p-3 w-40">
-        <p className="text-yellow-300 text-xs text-center mb-2 font-semibold uppercase tracking-wider">{t('confusionLabel')}</p>
-        <div className="w-full h-3 bg-black/60 rounded-full overflow-hidden border border-white/10">
-          <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${confusion}%`, backgroundColor: confusionColor }}
-          />
-        </div>
-        <p className="text-center text-white text-sm font-bold mt-1.5">{confusion}%</p>
-      </div>
+      <PixelPanel variant="board" className="absolute top-4 right-4 z-20 w-40 !p-3">
+        <p className="text-yellow-300 text-xs text-center mb-2 font-retro uppercase tracking-wider">{t('confusionLabel')}</p>
+        <PixelProgressBar value={confusion} colorFor={() => confusionColor} />
+        <p className="text-center text-white text-sm font-retro mt-1.5">{confusion}%</p>
+      </PixelPanel>
 
       <div className="absolute bottom-0 inset-x-0 z-20" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.95) 60%, rgba(0,0,0,0.7) 80%, transparent)' }}>
         <div className="max-w-5xl mx-auto px-6 pt-4 pb-6 flex flex-col gap-3">
@@ -330,7 +335,7 @@ Pravila ponašanja:
                   exit={{ opacity: 0 }}
                   className={`flex ${m.sender === 'student' ? 'justify-start' : 'justify-end'}`}
                 >
-                  <div className={`px-3 py-2 rounded-lg text-sm max-w-[85%] leading-snug ${m.sender === 'student' ? 'bg-green-900/80 text-green-100' : 'bg-blue-900/80 text-blue-100'}`}>
+                  <div className={`px-3 py-2 border-2 text-sm max-w-[85%] leading-snug ${m.sender === 'student' ? 'bg-[#166534] border-[#052e16] text-green-50' : 'bg-[#1e3a8a] border-[#0f1f4d] text-blue-50'}`}>
                     {m.text}
                   </div>
                 </motion.div>
@@ -339,22 +344,25 @@ Pravila ponašanja:
             <div ref={chatEndRef} />
           </div>
 
-          <div className="flex gap-3 items-center bg-white/10 backdrop-blur-md p-3 border border-white/20 rounded-xl">
+          <PixelPanel variant="board" className="flex gap-3 items-center !p-3">
             {sttSupported ? (
               <div className="flex flex-col items-center gap-1 shrink-0">
-                <button
+                <PixelButton
+                  variant={isListening ? 'danger' : 'wood'}
+                  size="icon"
+                  active={isListening}
                   onClick={toggleListening}
                   disabled={!isReady || isLoading}
-                  className={`p-3 rounded-lg transition-all active:scale-95 disabled:opacity-40 ${isListening ? 'bg-red-600 animate-pulse' : 'bg-white/10 hover:bg-white/20'}`}
+                  className={isListening ? 'animate-pulse' : ''}
                 >
-                  {isListening ? <MicOff size={20} className="text-white" /> : <Mic size={20} className="text-white" />}
-                </button>
+                  {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+                </PixelButton>
                 <div className="flex gap-1">
                   {(['sr-RS', 'en-US'] as const).map(lang => (
                     <button
                       key={lang}
                       onClick={() => setSelectedLang(lang)}
-                      className={`px-1.5 py-0.5 text-[10px] font-semibold rounded border ${selectedLang === lang ? 'bg-yellow-500 border-yellow-600 text-black' : 'bg-white/10 border-white/20 text-white/60'}`}
+                      className={`px-1.5 py-0.5 text-[9px] font-retro border-2 ${selectedLang === lang ? 'bg-yellow-400 border-yellow-700 text-black' : 'bg-transparent border-white/20 text-white/50'}`}
                     >
                       {lang === 'sr-RS' ? 'SR' : 'EN'}
                     </button>
@@ -377,14 +385,15 @@ Pravila ponašanja:
               className="flex-1 bg-transparent border-none focus:ring-0 text-white text-sm placeholder:text-white/30 resize-none outline-none"
             />
 
-            <button
+            <PixelButton
+              variant="primary"
+              size="icon"
               onClick={handleSend}
               disabled={!isReady || isLoading || !inputText.trim()}
-              className="p-3 bg-yellow-500 hover:bg-yellow-400 rounded-lg disabled:opacity-30 transition-all active:scale-95 shrink-0"
             >
-              <Send size={18} className="text-black" />
-            </button>
-          </div>
+              <Send size={18} />
+            </PixelButton>
+          </PixelPanel>
         </div>
       </div>
     </div>

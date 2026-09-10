@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { getIqLevel } from '../components/IqLevel';
 import { useLanguage } from '../lib/language';
+import { supabase } from '../lib/supabase';
 
 interface LeaderboardEntry {
   name: string;
@@ -22,18 +23,30 @@ export function Leaderboard({ onBack, iqPoints, username }: LeaderboardProps) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
 
   useEffect(() => {
-    fetch('/api/leaderboard')
-      .then(r => r.json())
-      .then((data: { username: string; score: number }[]) => {
-        const fetched = Array.isArray(data) ? data.map(d => ({ name: d.username, score: d.score })) : [];
-        const myEntry: LeaderboardEntry = { name: username || 'Ti', score: iqPoints, isMe: true };
-        const merged = [myEntry, ...fetched.filter(e => e.name !== myEntry.name)];
-        setEntries(merged.sort((a, b) => b.score - a.score).slice(0, 9));
-      })
-      .catch(() => {
-        setEntries([{ name: username || 'Ti', score: iqPoints, isMe: true }]);
-      });
-  }, []);
+    (async () => {
+      const { data } = await supabase
+        .from('user_stats')
+        .select('username, iq_points')
+        .order('iq_points', { ascending: false })
+        .limit(50);
+
+      const rows: LeaderboardEntry[] = Array.isArray(data)
+        ? data.map(d => ({
+            name: d.username,
+            score: d.iq_points,
+            isMe: d.username === username,
+          }))
+        : [];
+
+      // If current user isn't in DB yet (first session), inject their entry
+      if (!rows.some(r => r.name === username)) {
+        rows.push({ name: username || 'Ti', score: iqPoints, isMe: true });
+        rows.sort((a, b) => b.score - a.score);
+      }
+
+      setEntries(rows.slice(0, 9));
+    })();
+  }, [username, iqPoints]);
 
   return (
     <motion.div

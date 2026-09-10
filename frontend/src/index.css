@@ -5,10 +5,65 @@
   --font-pixel: "Fredoka", sans-serif;
   --font-silkscreen: "Fredoka", sans-serif;
   --font-sans: "Fredoka", sans-serif;
+  /* Same readable typeface as the rest of the app — no pixelated display font. */
+  --font-retro: "Fredoka", sans-serif;
+
+  /* ---- Shared pixel-art design system palette ---- */
+  /* Warm wood/parchment — panels, borders, primary surfaces */
+  --color-wood-50: #f9f2e3;
+  --color-wood-100: #ebd09b;
+  --color-wood-200: #d4bb72;
+  --color-wood-300: #c2964e;
+  --color-wood-400: #a67139;
+  --color-wood-500: #8b5a33;
+  --color-wood-600: #5e411b;
+  --color-wood-700: #3d2b1f;
+  --color-wood-800: #2d1b0d;
+  --color-wood-900: #1a0f08;
+
+  /* Muted sage/teal — secondary surfaces, calm accents */
+  --color-sage-300: #b7cdbf;
+  --color-sage-400: #9db8a8;
+  --color-sage-500: #76a5af;
+  --color-sage-600: #5c8a94;
+  --color-sage-700: #446b73;
+
+  /* Dark navy/blue-gray — chalkboard-style panels, overlays */
+  --color-ink-700: #334155;
+  --color-ink-800: #1e293b;
+  --color-ink-900: #0f172a;
+
+  /* Pixel green — primary action */
+  --color-pixgreen-400: #4ade80;
+  --color-pixgreen-500: #22c55e;
+  --color-pixgreen-700: #166534;
 }
 
 body {
   font-family: "Fredoka", sans-serif;
   image-rendering: pixelated;
   user-select: none;
+}
+
+/* Subtle CRT scanline overlay — decorative only, never blocks interaction/reading */
+.crt-scanlines {
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.035) 0px,
+    rgba(255, 255, 255, 0.035) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #334155;
+  border: 2px solid #0f172a;
 }

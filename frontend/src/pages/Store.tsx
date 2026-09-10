@@ -14,14 +14,20 @@ interface StoreProps {
   setActiveStudentId: React.Dispatch<React.SetStateAction<string>>;
 }
 
-// The 3 students shown in the shop slots, in order
-const SLOT_IDS = ['stefan', 'jovana', 'viktor'];
+// The 4 students shown in the shop slots, in order
+const SLOT_IDS = ['marko', 'jovana', 'viktor', 'vuk'];
 
-// Per-slot: image hitbox, name label, kupi button
+// Per-slot: image hitbox, name label, kupi button.
+// NOTE: shop.jpeg was illustrated with 3 stall positions (previously stefan/jovana/viktor).
+// The 4th slot below (for vuk) is an estimated position continuing the same spacing —
+// it isn't matched to hand-drawn stall art the way the first 3 are, since no updated
+// shop.jpeg with a 4th stall was provided. Adjust these percentages once you see it rendered,
+// or swap in new artwork with an actual 4th stall.
 const SLOTS = [
   { imgLeft: 18.25, nameLeft: 18.25, btnLeft: 19.5, btnWidth: 11 },
   { imgLeft: 31,    nameLeft: 31,    btnLeft: 32,   btnWidth: 11 },
   { imgLeft: 43,    nameLeft: 43,    btnLeft: 44.5, btnWidth: 11 },
+  { imgLeft: 55.25, nameLeft: 55.25, btnLeft: 56.5, btnWidth: 11 },
 ];
 
 export function Store({
@@ -145,15 +151,18 @@ export function Store({
               alt={student.name}
               animate={isShaking ? { x: [0, -6, 6, -6, 6, 0] } : {}}
               transition={isShaking ? { duration: 0.35 } : {}}
+              onError={(e) => { e.currentTarget.style.opacity = '0'; }}
               className={`absolute object-contain
                 ${!isUnlocked ? 'grayscale brightness-50' : ''}
                 ${isActive ? 'drop-shadow-[0_0_14px_rgba(255,193,7,0.7)]' : ''}
               `}
               style={{
-                left: `calc(${slot.imgLeft}% - 7%)`,
-                top: '20%',
-                width: '28%',
-                height: '55%',
+                // Shrunk 2.5x from the original 28% x 55%, then another 0.125x (12.5%) smaller —
+                // always re-centered on the same point (left+7%, top 47.5%) so tiles stay centered.
+                left: `calc(${slot.imgLeft}% + 2.1%)`,
+                top: '37.875%',
+                width: '9.8%',
+                height: '19.25%',
                 imageRendering: 'pixelated',
                 pointerEvents: 'none',
               }}

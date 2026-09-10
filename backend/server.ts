@@ -4,7 +4,7 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
-import OpenAI from "openai";
+import Groq from "groq-sdk";
 import { createRequire } from "module";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 
@@ -17,42 +17,36 @@ dotenv.config({ path: path.join(__dirname, ".env") });
 
 const CONTENT_DIR = path.join(__dirname, "content");
 
-const MODEL = process.env.OPENAI_MODEL || "gpt-4o";
+const MODEL = "openai/gpt-oss-120b";
+const TTS_MODEL = "canopylabs/orpheus-v1-english";
 
-const openaiTextClient = process.env.GITHUB_TOKEN
-  ? new OpenAI({
-      baseURL: "https://models.inference.ai.azure.com",
-      apiKey: process.env.GITHUB_TOKEN,
-      maxRetries: 0,
-    })
+const groqClient = process.env.GROQ_API_KEY
+  ? new Groq({ apiKey: process.env.GROQ_API_KEY, maxRetries: 0 })
   : null;
 
-const openaiTtsClient = process.env.OPENAI_API_KEY
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  : null;
-
-if (openaiTextClient) {
-  openaiTextClient.chat.completions.create({
+if (groqClient) {
+  groqClient.chat.completions.create({
     model: MODEL,
     messages: [{ role: "user", content: "ping" }],
     max_tokens: 1,
   }).then(() => {
-    console.log("GitHub Models: connection OK");
+    console.log("Groq: connection OK");
   }).catch((err: any) => {
-    console.error("GitHub Models: connection FAILED —", err.message);
+    console.error("Groq: connection FAILED —", err.message);
   });
 }
 
+// Backend uses the service role key (bypasses RLS) — never expose this key to the frontend.
 const supabase =
-  process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY
-    ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY)
+  process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
     : null;
 
-function toOpenAIMessages(
+function toGroqMessages(
   contents: any[],
   systemInstruction?: string
-): OpenAI.Chat.ChatCompletionMessageParam[] {
-  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [];
+): Groq.Chat.ChatCompletionMessageParam[] {
+  const messages: Groq.Chat.ChatCompletionMessageParam[] = [];
   if (systemInstruction) messages.push({ role: "system", content: systemInstruction });
   for (const content of contents) {
     const role = content.role === "model" ? "assistant" : (content.role as "user" | "assistant");
@@ -61,7 +55,7 @@ function toOpenAIMessages(
       messages.push({ role, content: parts[0].text });
       continue;
     }
-    const contentParts: OpenAI.Chat.ChatCompletionContentPart[] = [];
+    const contentParts: Groq.Chat.ChatCompletionContentPart[] = [];
     for (const part of parts) {
       if (part.text !== undefined) contentParts.push({ type: "text", text: part.text });
       else if (part.inlineData?.mimeType?.startsWith("image/")) {
@@ -83,9 +77,7 @@ function toOpenAIMessages(
   return messages;
 }
 
-function toOpenAIParams(
-  generationConfig: any
-): Partial<OpenAI.Chat.ChatCompletionCreateParamsNonStreaming> {
+function toGroqParams(generationConfig: any): Record<string, any> {
   if (!generationConfig) return {};
   const p: any = {};
   if (generationConfig.temperature !== undefined) p.temperature = generationConfig.temperature;
@@ -126,8 +118,8 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 app.post("/api/ai/generate", async (req, res) => {
   const { contents, systemInstruction, generationConfig } = req.body;
-  if (!openaiTextClient) {
-    return res.status(500).json({ error: "GITHUB_TOKEN is not configured." });
+  if (!groqClient) {
+    return res.status(500).json({ error: "GROQ_API_KEY is not configured." });
   }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 25_000);
@@ -138,9 +130,9 @@ app.post("/api/ai/generate", async (req, res) => {
   };
 
   try {
-    const messages = toOpenAIMessages(contents, systemInstruction);
-    const completion = await openaiTextClient.chat.completions.create(
-      { model: MODEL, messages, ...toOpenAIParams(generationConfig) },
+    const messages = toGroqMessages(contents, systemInstruction);
+    const completion = await groqClient.chat.completions.create(
+      { model: MODEL, messages, ...toGroqParams(generationConfig) },
       { signal: controller.signal }
     );
     clearTimeout(timer);
@@ -152,6 +144,20 @@ app.post("/api/ai/generate", async (req, res) => {
   }
 });
 
+// Maps the app's voice IDs (used in students.ts) → Groq Orpheus voice names.
+// Orpheus TTS is English-only. Serbian is routed to Azure Speech instead (see azureTTS below).
+const ORPHEUS_VOICE_MAP: Record<string, string> = {
+  nova:           "hannah", // soft female      (Marko)
+  echo:           "troy",   // deep male        (Stefan)
+  shimmer:        "hannah", // warm female      (Jovana)
+  onyx:           "austin", // articulate male  (Viktor)
+  fable:          "troy",   // deep voice       (Vuk)
+  "professor-en": "troy",
+};
+
+// Azure AI Speech only offers one Serbian neural voice, so every character shares it.
+const AZURE_SR_VOICE = "sr-RS-SreckoNeural";
+
 function truncateAtSentence(text: string, maxChars = 600): string {
   if (text.length <= maxChars) return text;
   const chunk = text.slice(0, maxChars);
@@ -159,38 +165,70 @@ function truncateAtSentence(text: string, maxChars = 600): string {
   return last > maxChars * 0.4 ? chunk.slice(0, last + 1) : chunk;
 }
 
-app.post("/api/tts", async (req, res) => {
-  const { text, voice } = req.body;
-  if (!text) return res.status(400).json({ error: "Missing text." });
-  if (!openaiTtsClient) {
-    return res.status(501).json({ error: "OPENAI_API_KEY not configured." });
+function escapeSsml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+async function azureTTS(text: string): Promise<Buffer> {
+  const ssml = `<speak version="1.0" xml:lang="sr-RS"><voice xml:lang="sr-RS" name="${AZURE_SR_VOICE}">${escapeSsml(text)}</voice></speak>`;
+  const response = await fetch(
+    `https://${process.env.AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`,
+    {
+      method: "POST",
+      headers: {
+        "Ocp-Apim-Subscription-Key": process.env.AZURE_SPEECH_KEY!,
+        "Content-Type": "application/ssml+xml",
+        "X-Microsoft-OutputFormat": "audio-24khz-48kbitrate-mono-mp3",
+      },
+      body: ssml,
+    }
+  );
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Azure TTS ${response.status}: ${errText}`);
   }
-  const validVoices = ["alloy", "ash", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer"];
-  const safeVoice = validVoices.includes(voice) ? voice : "nova";
+  return Buffer.from(await response.arrayBuffer());
+}
+
+app.post("/api/tts", async (req, res) => {
+  const { text, voice, lang } = req.body;
+  if (!text) return res.status(400).json({ error: "Missing text." });
   const input = truncateAtSentence(text);
 
-  try {
-    const mp3 = await openaiTtsClient.audio.speech.create({
-      model: "gpt-4o-mini-tts",
-      voice: safeVoice as any,
-      input,
-      response_format: "mp3",
-      instructions: "You are speaking Serbian (srpski jezik). Pronounce every word exactly as a native Serbian speaker would. Use proper Serbian phonetics throughout — never use English pronunciation for any word.",
-    } as any);
-    const buffer = Buffer.from(await mp3.arrayBuffer());
-    return res.json({ audio: buffer.toString("base64") });
-  } catch (err1: any) {
-    console.warn("gpt-4o-mini-tts failed, falling back to tts-1:", err1.message);
+  // Serbian → Azure Speech (Groq/Orpheus has no Serbian voice).
+  if (lang === "sr") {
+    if (!process.env.AZURE_SPEECH_KEY || !process.env.AZURE_SPEECH_REGION) {
+      return res.status(501).json({ error: "No Serbian TTS service configured. Add AZURE_SPEECH_KEY and AZURE_SPEECH_REGION to .env" });
+    }
+    try {
+      const buffer = await azureTTS(input);
+      return res.json({ audio: buffer.toString("base64") });
+    } catch (error: any) {
+      console.error("Azure TTS Error:", error.message);
+      return res.status(500).json({ error: error.message });
+    }
   }
 
+  // English → Groq Orpheus.
+  if (!groqClient) {
+    return res.status(501).json({ error: "No TTS service configured. Add GROQ_API_KEY to .env" });
+  }
+
+  const orpheusVoice = ORPHEUS_VOICE_MAP[voice] ?? ORPHEUS_VOICE_MAP.nova;
+
   try {
-    const mp3 = await openaiTtsClient.audio.speech.create({
-      model: "tts-1",
-      voice: safeVoice as any,
+    const speech = await groqClient.audio.speech.create({
+      model: TTS_MODEL,
+      voice: orpheusVoice,
       input,
-      response_format: "mp3",
+      response_format: "wav",
     });
-    const buffer = Buffer.from(await mp3.arrayBuffer());
+    const buffer = Buffer.from(await speech.arrayBuffer());
     return res.json({ audio: buffer.toString("base64") });
   } catch (error: any) {
     console.error("TTS Error:", error.message);

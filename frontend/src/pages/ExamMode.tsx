@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { generateContentProxy } from '../lib/ai';
 import { Message } from '../App';
 import { useLanguage } from '../lib/language';
+import { PixelButton } from '../components/ui/Pixel';
 
 interface ExamModeProps {
   lessonText: string;
@@ -76,7 +77,7 @@ TRANSKRIPT PREDAVANJA:
 ${chatHistory || 'Nema transkripta, koristi samo tekst lekcije.'}`;
 
         const response = await generateContentProxy({
-          model: 'gemini-2.0-flash',
+          model: 'openai/gpt-oss-120b',
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
         });
 
@@ -92,11 +93,10 @@ ${chatHistory || 'Nema transkripta, koristi samo tekst lekcije.'}`;
 
         const finalQuestions = parsedQuestions.slice(0, 8);
         while (finalQuestions.length < 8) {
-          finalQuestions.push({
-            q: "Koja je glavna tema ove lekcije?",
-            options: ["Zavisi od unosa", "Nije poznato", "Sve od navedenog", "Ništa"],
-            correctIndex: 2
-          });
+          finalQuestions.push(lang === 'en'
+            ? { q: "What is the main topic of this lesson?", options: ["Depends on input", "Unknown", "All of the above", "None"], correctIndex: 2 }
+            : { q: "Koja je glavna tema ove lekcije?", options: ["Zavisi od unosa", "Nije poznato", "Sve od navedenog", "Ništa"], correctIndex: 2 }
+          );
         }
 
         setQuestions(finalQuestions);
@@ -131,7 +131,38 @@ ${chatHistory || 'Nema transkripta, koristi samo tekst lekcije.'}`;
         }, 3000);
       } catch (error) {
         console.error("Greška pri generisanju kviza", error);
+        const fallbackQuestions: Question[] = Array.from({ length: 8 }, () =>
+          lang === 'en'
+            ? { q: "What is the main topic of this lesson?", options: ["Depends on input", "Unknown", "All of the above", "None"], correctIndex: 2 }
+            : { q: "Koja je glavna tema ove lekcije?", options: ["Zavisi od unosa", "Nije poznato", "Sve od navedenog", "Ništa"], correctIndex: 2 }
+        );
+        setQuestions(fallbackQuestions);
         setStage('taking');
+        setTimeout(() => {
+          const generatedAnswers: StudentAnswer[] = fallbackQuestions.map((q, idx) => {
+            const chanceToGetRight = 95 - (confusionScore * 0.75);
+            const isCorrect = (Math.random() * 100) <= chanceToGetRight;
+            let chosenIndex = q.correctIndex;
+            if (!isCorrect) {
+              const wrongOptions = [0, 1, 2, 3].filter(i => i !== q.correctIndex);
+              chosenIndex = wrongOptions[Math.floor(Math.random() * wrongOptions.length)];
+            }
+            return { questionIndex: idx, chosenIndex, isCorrect };
+          });
+          setStudentAnswers(generatedAnswers);
+          setStage('smoke');
+          setTimeout(() => {
+            setStage('results');
+            const correctCount = generatedAnswers.filter(a => a.isCorrect).length;
+            let letter = 'F';
+            if (correctCount === 8) letter = 'A+';
+            else if (correctCount === 7) letter = 'A';
+            else if (correctCount >= 5) letter = 'B';
+            else if (correctCount >= 4) letter = 'C';
+            else if (correctCount >= 3) letter = 'D';
+            setGrade({ score: correctCount, letter, iqEarned: correctCount * 10 });
+          }, 2000);
+        }, 3000);
       }
     };
 
@@ -256,21 +287,23 @@ ${chatHistory || 'Nema transkripta, koristi samo tekst lekcije.'}`;
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
-            className="absolute top-10 right-10 bg-[#f4e4c4] border-8 border-[#8b5a2b] p-8 text-black z-50 shadow-2xl rotate-2"
+            className="absolute top-10 right-10 bg-[#ebd09b] border-8 border-[#c2964e] p-8 text-[#3d2b1f] z-50 shadow-[12px_12px_0_rgba(0,0,0,0.5)] rotate-2"
           >
-            <h2 className="text-4xl font-silkscreen mb-4 border-b-4 border-black pb-2 text-center">{t('resultsTitle')}</h2>
+            <h2 className="text-4xl font-retro mb-4 border-b-4 border-[#5e411b] pb-2 text-center">{t('resultsTitle')}</h2>
             <p className="text-2xl mb-2">{t('correctLabel')} <span className="font-bold text-green-700">{grade.score} / 8</span></p>
             <p className="text-3xl mt-4">{t('gradeLabel')}</p>
-            <p className="text-8xl font-silkscreen text-red-600 text-center my-4 drop-shadow-md">{grade.letter}</p>
-            <p className="text-xl bg-yellow-200 p-2 font-bold text-center border-l-4 border-yellow-500">
+            <p className="text-8xl font-retro text-red-600 text-center my-4 drop-shadow-md">{grade.letter}</p>
+            <p className="text-xl bg-[#f9f2e3] p-2 font-bold text-center border-l-4 border-[#c2964e]">
               {t('iqEarnedLabel')}{grade.iqEarned}
             </p>
-            <button
+            <PixelButton
+              variant="wood"
+              size="lg"
+              className="mt-8 w-full justify-center text-xl"
               onClick={() => onFinish(grade.iqEarned, grade.score >= 5)}
-              className="mt-8 w-full px-6 py-4 bg-[#8b5a2b] text-white font-silkscreen text-xl hover:bg-[#a67139] border-4 border-[#593922] shadow-[4px_4px_0_rgba(0,0,0,0.5)] active:translate-y-1 active:shadow-none transition-all"
             >
               {t('finishTest')}
-            </button>
+            </PixelButton>
           </motion.div>
         )}
       </div>
