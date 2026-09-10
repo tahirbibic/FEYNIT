@@ -14,6 +14,9 @@ interface ContentPdf {
   name: string;
 }
 
+// Cream/gold pixel-outline text, for labels sitting on dark wood/background hotspots.
+const PIXEL_LABEL_SHADOW = '-1px -1px 0 #3d2b1f, 1px -1px 0 #3d2b1f, -1px 1px 0 #3d2b1f, 1px 1px 0 #3d2b1f, 0 2px 3px rgba(0,0,0,0.6)';
+
 interface ClassroomProps {
   onBack: () => void;
   onGoToGreenboard: () => void;
@@ -144,14 +147,20 @@ export function Classroom({ onBack, onGoToGreenboard, onHandOutExam, lessonText,
           </div>
         </div>
 
-        <button onClick={onBack} className="absolute left-[33.3%] top-[55.2%] w-[11.3%] h-[6.5%] bg-transparent hover:bg-white/20 cursor-pointer transition-colors border-2 border-transparent hover:border-green-400/80 rounded-md z-10" title="Vrati se nazad">
-          <span className="sr-only">Nazad</span>
+        <button onClick={onBack} className="absolute left-[30%] top-[57.5%] w-[13%] h-[7.48%] bg-transparent hover:bg-white/20 cursor-pointer transition-colors border-2 border-transparent hover:border-green-400/80 rounded-md z-10 flex items-center justify-center" title="Vrati se nazad">
+          <span className="font-retro text-[10px] md:text-sm text-[#f4d58d] uppercase tracking-wide" style={{ textShadow: PIXEL_LABEL_SHADOW }}>
+            {t('goBack')}
+          </span>
         </button>
-        <button onClick={onGoToGreenboard} className="absolute left-[46.5%] top-[55.2%] w-[11.3%] h-[6.5%] bg-transparent hover:bg-white/20 cursor-pointer transition-colors border-2 border-transparent hover:border-green-400/80 rounded-md z-10" title="Idi na tablu">
-          <span className="sr-only">Tabla</span>
+        <button onClick={onGoToGreenboard} className="absolute left-[46.5%] top-[57.5%] w-[13%] h-[7.48%] bg-transparent hover:bg-white/20 cursor-pointer transition-colors border-2 border-transparent hover:border-green-400/80 rounded-md z-10 flex items-center justify-center" title="Idi na tablu">
+          <span className="font-retro text-[10px] md:text-sm text-[#f4d58d] uppercase tracking-wide" style={{ textShadow: PIXEL_LABEL_SHADOW }}>
+            {t('goToBoard')}
+          </span>
         </button>
-        <button onClick={() => setActivePopup('folder')} className="absolute left-[37.4%] top-[36%] w-[12.6%] h-[18.2%] bg-transparent hover:bg-white/20 cursor-pointer transition-colors border-2 border-transparent hover:border-gray-300/80 rounded-sm z-10" title="Biblioteka i Materijali">
-          <span className="sr-only">Folder</span>
+        <button onClick={() => setActivePopup('folder')} className="absolute left-[37.4%] top-[36%] w-[12.6%] h-[18.2%] bg-transparent hover:bg-white/20 cursor-pointer transition-colors border-2 border-transparent hover:border-gray-300/80 rounded-sm z-10 flex items-center justify-center" title="Biblioteka i Materijali">
+          <span className="font-retro text-[10px] md:text-sm text-[#3d2b1f] uppercase tracking-wide text-center leading-tight absolute" style={{ textShadow: '1px 1px 0 rgba(255,255,255,0.5)', left: '8%', top: '50%', transform: 'translateY(-50%)' }}>
+            {t('library')}
+          </span>
         </button>
         <button onClick={() => setActivePopup('report')} className="absolute left-[38.2%] top-[21.5%] w-[11.8%] h-[14.5%] bg-transparent hover:bg-white/30 cursor-pointer transition-colors border-2 border-transparent hover:border-orange-400/80 rounded-sm z-10" title="Dnevnik studenta">
           <span className="sr-only">Dnevnik</span>

@@ -1,51 +1,90 @@
-# feynit
+# 🧠 FEYNIT — Feynman Technique AI Classroom
 
-Educational game based on the Feynman Technique. Teach AI students to deepen your own understanding. Built with React, Express, Supabase, and Groq.
+[![React](https://img.shields.io/badge/React-19-blue.svg?logo=react&logoColor=white)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-6-purple.svg?logo=vite&logoColor=white)](https://vite.dev)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-38bdf8.svg?logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
+[![Express](https://img.shields.io/badge/Express-4-lightgrey.svg?logo=express&logoColor=white)](https://expressjs.com)
+[![Supabase](https://img.shields.io/badge/Supabase-Database-emerald.svg?logo=supabase&logoColor=white)](https://supabase.com)
+[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-orange.svg?logo=openai&logoColor=white)](https://openai.com)
 
-## Tech Stack
+**FEYNIT** is an interactive, gamified learning application designed around the **Feynman Technique** ("Explain it like I'm five"). By acting as a teacher and explaining complex topics to AI-powered students with distinct personalities, users deepen their own understanding. The game rewards clarity, penalizes jargon, and tests the student's absorption of the material via AI-generated exams.
 
-- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS 4
-- **Backend**: Express 4, Node.js, TypeScript
-- **AI**: Groq GPT-OSS 120B (text), Groq Orpheus TTS (voice, English), Azure AI Speech (voice, Serbian), pdfjs-dist (PDF extraction)
-- **Database**: Supabase (auth, documents, leaderboard)
+---
 
-## Setup
+## 🚀 Key Features
 
-### 1. Install dependencies
+*   **Dual Roles**: Enter as a **Professor** to teach topics, or as a **Student** to learn from an AI tutor.
+*   **Unique Student Personalities**: Unlock and teach students with different cognitive traits:
+    *   *Marko* (Easy) — Simple explanations and everyday examples.
+    *   *Stefan* (Medium) — Understands things only through football analogies.
+    *   *Jovana* (Medium) — Connects material to art, colors, and metaphors.
+    *   *Viktor* (Hard) — Demands mathematical precision and rigorous logic.
+    *   *Prof. Vuk* (Extreme) — Arogant genius who rejects non-academic explanations.
+*   **Speech Recognition & Synthesis (STT/TTS)**: Talk to your students using real-time speech-to-text, and listen to their synthesized voice responses.
+*   **Automated Evaluation & Exams**: Administer custom multiple-choice exams. The AI student answers based on how well you explained the topic.
+*   **Pedagogical Analytics**: Get immediate, detailed feedback on your teaching style (what went well, what needs improvement, and your final pedagogical score).
+*   **Interactive Store & Leaderboard**: Earn IQ points from successful lectures, unlock new students in the shop, and compete for the top ranking.
+
+---
+
+## 🛠️ Tech Stack
+
+*   **Frontend**: React 19, TypeScript, Vite, Tailwind CSS 4, Motion (Framer Motion)
+*   **Backend**: Express 4, Node.js, TSX (TypeScript execution)
+*   **AI Integration**: OpenAI API (GPT-4o / Gemini-2.0-flash proxy), OpenAI TTS (voice), Web Speech API (speech-to-text)
+*   **Database & Auth**: Supabase (Leaderboard, Documents library, User stats cloud sync, Email Authentication)
+
+---
+
+## ⚙️ Installation & Setup
+
+### 1. Install Dependencies
+
+You can install all dependencies from the root directory:
 
 ```bash
 npm run install:all
 ```
 
-Or manually:
+*Alternatively, install them manually:*
 ```bash
+# Install backend dependencies
 cd backend && npm install
+
+# Install frontend dependencies
 cd ../frontend && npm install
 ```
 
-### 2. Configure environment variables
+### 2. Configure Environment Variables
 
-**`backend/.env`** — create this file:
+Create the following configuration files in their respective folders:
+
+#### 📁 `backend/.env`
 ```env
-GROQ_API_KEY=your_groq_api_key
-AZURE_SPEECH_KEY=your_azure_speech_key
-AZURE_SPEECH_REGION=your_azure_speech_region
+PORT=3001
+OPENAI_MODEL=gpt-4o
+OPENAI_API_KEY=your_openai_api_key
+GITHUB_TOKEN=your_optional_github_pat_token
+
+# Supabase Configurations
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your_supabase_anon_key
-PORT=3001
 ```
 
-**`frontend/.env.local`** — create this file:
+#### 📁 `frontend/.env.local`
 ```env
+# Supabase Configurations
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-### 3. Set up Supabase tables
+### 3. Set Up Supabase Database Tables
 
-Run this SQL in the Supabase SQL editor:
+Execute the following SQL commands in your Supabase SQL Editor to create all required database schemas:
 
 ```sql
+-- 1. Leaderboard Table
 create table leaderboard (
   id uuid default gen_random_uuid() primary key,
   username text not null unique,
@@ -53,6 +92,7 @@ create table leaderboard (
   updated_at timestamptz default now()
 );
 
+-- 2. Documents Library Table
 create table documents (
   id uuid default gen_random_uuid() primary key,
   name text not null,
@@ -62,67 +102,78 @@ create table documents (
   file_size integer,
   created_at timestamptz default now()
 );
+
+-- 3. User Statistics Table (Cloud Sync)
+create table user_stats (
+  user_id uuid primary key,
+  username text not null,
+  iq_points integer not null default 60,
+  student_level integer not null default 1,
+  unlocked_students text[] default array['marko'],
+  active_student_id text default 'marko',
+  history jsonb default '[]'::jsonb,
+  updated_at timestamptz default now()
+);
 ```
 
-Also enable Supabase Auth (Email provider) in the Supabase dashboard under Authentication > Providers.
+> [!IMPORTANT]
+> Make sure to enable the **Email Provider** in the Supabase Dashboard under **Authentication > Providers** to allow user logins.
 
-### 4. Add assets
+### 4. Setup Static Assets
 
-Place these images in `frontend/public/assets/`:
+To ensure student avatars and backgrounds render correctly, place your files in the `frontend/public/assets/` directory using these exact names:
 
-**Login screen:**
-- `login-bg.jpg` — full-screen school entrance background
-- `login-logo.png` — game title logo
+*   **Login Screen Assets**:
+    *   `login-bg.jpg` — Background image of the school entrance.
+    *   `login-logo.png` — FEYNIT title logo.
+*   **Student Avatars**:
+    *   `student-marko.png` (Marko)
+    *   `student_stefan.png` (Stefan)
+    *   `student_jovana.png` (Jovana)
+    *   `student_viktor.png` (Viktor)
+    *   `student-vuk.png` (Prof. Vuk)
+    *   `student-soon.png` (Placeholder for coming-soon slots)
 
-**Student avatars (for the shop):**
-- `student-marko.png`
-- `student-jovana.png`
-- `student-stefan.png`
-- `student-viktor.png`
-- `student-vuk.png`
-- `student-soon.png` — placeholder for coming-soon slots
+---
 
-**Existing assets** (already present):
-- `classroom-bg.jpg`, `desk-student.jpg`, `exam-bg.jpg`, `greenboard-bg.jpg`
-- `kid_teach.jpg`, `kid_teach_talking.jpg`, `kid_teach_thinking.jpg`
-- `leaderboard-bg.jpg`, `menu-bg-open.jpg`, `menu-bg-professor-open.jpg`, `menu-bg-student-open.jpg`
-- `pano-meni.jpg`, `professor-neutral.jpg`, `professor-point.jpg`, `professor-talk.jpg`, `store.jpg`
+## 🏃 Running Locally
 
-## Running
+To run both the backend server and frontend development client concurrently:
 
-**Two separate terminals:**
 ```bash
-cd backend && npm run dev   # starts on port 3001
-cd frontend && npm run dev  # starts on port 5173
-```
-
-**Or from the root:**
-```bash
-npm install
+# Run from the root directory
 npm run dev
 ```
 
-Open http://localhost:5173
+*   **Frontend Client**: http://localhost:5173
+*   **Backend Server**: http://localhost:3001
 
-## Folder Structure
+---
+
+## 📁 Project Directory Structure
 
 ```
 feynit/
 ├── backend/
-│   ├── server.ts      — Express API (AI proxy, TTS, PDF, leaderboard, documents)
+│   ├── content/          # Cached local document uploads
+│   ├── server.ts         # Express server & AI endpoint proxies
 │   └── package.json
 ├── frontend/
+│   ├── public/assets/    # Visual backgrounds, avatars, and fonts
 │   ├── src/
-│   │   ├── pages/     — Scene components
-│   │   ├── components/ — Reusable UI
-│   │   ├── data/      — Student definitions
-│   │   ├── lib/       — ai.ts, supabase.ts
-│   │   └── App.tsx
-│   ├── public/assets/
+│   │   ├── components/   # Shared UI components (e.g. IQ Level Badge)
+│   │   ├── data/         # Mock data and student profiles (students.ts)
+│   │   ├── lib/          # AI client helper, translations, and Supabase client
+│   │   ├── pages/        # Scene screens (Classroom, Store, Leaderboard, Analytics)
+│   │   ├── App.tsx       # Main router and state manager
+│   │   └── main.tsx
 │   └── package.json
 └── README.md
 ```
 
-## License
+---
+
+## 📜 License
 
 Copyright (c) 2026 SPIRIT. All rights reserved.
+Licensed under the [MIT License](LICENSE).

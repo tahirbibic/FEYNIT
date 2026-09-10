@@ -8,6 +8,9 @@ interface GreenboardMenuProps {
   onTest: () => void;
 }
 
+// Cream/gold pixel-outline text, for labels sitting on dark wood/background hotspots.
+const PIXEL_LABEL_SHADOW = '-1px -1px 0 #3d2b1f, 1px -1px 0 #3d2b1f, -1px 1px 0 #3d2b1f, 1px 1px 0 #3d2b1f, 0 2px 3px rgba(0,0,0,0.6)';
+
 export function GreenboardMenu({ onBack, onTeach, onTest }: GreenboardMenuProps) {
   const { t } = useLanguage();
   return (
@@ -32,18 +35,22 @@ export function GreenboardMenu({ onBack, onTeach, onTest }: GreenboardMenuProps)
 
         <button
           onClick={onTest}
-          className="absolute left-[15.5%] top-[65.5%] w-[32%] h-[16.5%] bg-transparent hover:bg-white/20 cursor-pointer transition-colors border-2 border-transparent hover:border-green-300/80 rounded-[12px] z-10"
+          className="absolute left-[15.5%] top-[65.5%] w-[32%] h-[16.5%] bg-transparent hover:bg-white/20 cursor-pointer transition-colors border-2 border-transparent hover:border-green-300/80 rounded-[12px] z-10 flex items-center justify-center"
           title={t('handOutExams')}
         >
-          <span className="sr-only">Podeli testove</span>
+          <span className="font-retro text-sm md:text-lg text-[#f4d58d] uppercase tracking-wide" style={{ textShadow: PIXEL_LABEL_SHADOW }}>
+            {t('handOutExams')}
+          </span>
         </button>
 
         <button
           onClick={onTeach}
-          className="absolute left-[52%] top-[65.5%] w-[32%] h-[16.5%] bg-transparent hover:bg-white/20 cursor-pointer transition-colors border-2 border-transparent hover:border-green-300/80 rounded-[12px] z-10"
+          className="absolute left-[52%] top-[65.5%] w-[32%] h-[16.5%] bg-transparent hover:bg-white/20 cursor-pointer transition-colors border-2 border-transparent hover:border-green-300/80 rounded-[12px] z-10 flex items-center justify-center"
           title={t('teachLessonBtn')}
         >
-          <span className="sr-only">Predaj lekciju</span>
+          <span className="font-retro text-sm md:text-lg text-[#f4d58d] uppercase tracking-wide" style={{ textShadow: PIXEL_LABEL_SHADOW }}>
+            {t('teachLessonBtn')}
+          </span>
         </button>
 
         <PixelButton variant="danger" size="lg" onClick={onBack} className="absolute top-4 left-4 z-20 text-xl">
