@@ -32,3 +32,12 @@ Thumbs.db
 *.ntvs*
 *.njsproj
 *.sln
+
+# Claude Code local state
+.claude/
+
+# Supabase migrations (local-only, not tracked)
+supabase/migrations/
+
+# Downloaded tools/binaries
+cloudflared-windows-amd64.exe
