@@ -4,6 +4,7 @@ import { generateContentProxy } from '../lib/ai';
 import { Message } from '../App';
 import { useLanguage } from '../lib/language';
 import { PixelButton } from '../components/ui/Pixel';
+import { playSound } from '../lib/sound';
 
 interface ExamModeProps {
   lessonText: string;
@@ -126,6 +127,7 @@ ${chatHistory || 'Nema transkripta, koristi samo tekst lekcije.'}`;
             else if (correctCount >= 5) letter = 'B';
             else if (correctCount >= 4) letter = 'C';
             else if (correctCount >= 3) letter = 'D';
+            playSound('/assets/sfx/iq-earned.mp3'); // place your IQ-earned SFX file here
             setGrade({ score: correctCount, letter, iqEarned: correctCount * 10 });
           }, 2000);
         }, 3000);
@@ -160,6 +162,7 @@ ${chatHistory || 'Nema transkripta, koristi samo tekst lekcije.'}`;
             else if (correctCount >= 5) letter = 'B';
             else if (correctCount >= 4) letter = 'C';
             else if (correctCount >= 3) letter = 'D';
+            playSound('/assets/sfx/iq-earned.mp3'); // place your IQ-earned SFX file here
             setGrade({ score: correctCount, letter, iqEarned: correctCount * 10 });
           }, 2000);
         }, 3000);

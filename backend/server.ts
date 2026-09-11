@@ -17,6 +17,8 @@ dotenv.config({ path: path.join(__dirname, ".env") });
 
 const CONTENT_DIR = path.join(__dirname, "content");
 
+// Groq's hosted open-weight GPT-OSS model. The "openai/" prefix is just that model's
+// name on Groq's model catalog — this call goes to Groq's API, never OpenAI's.
 const MODEL = "openai/gpt-oss-120b";
 const TTS_MODEL = "canopylabs/orpheus-v1-english";
 
@@ -85,6 +87,32 @@ function toGroqParams(generationConfig: any): Record<string, any> {
   if (generationConfig.topP !== undefined) p.top_p = generationConfig.topP;
   if (generationConfig.responseMimeType === "application/json") p.response_format = { type: "json_object" };
   return p;
+}
+
+// Strip HTML tags and control/non-printable characters, and cap length, on any
+// free-text field a user submits before it's stored or echoed back by the API.
+// React already escapes everything it renders, but this keeps the stored data
+// itself clean regardless of where else it might end up (emails, logs, exports...).
+function sanitizeText(input: unknown, maxLen = 200): string {
+  if (typeof input !== "string") return "";
+  let noControlChars = "";
+  for (let i = 0; i < input.length; i++) {
+    const code = input.charCodeAt(i);
+    if (code < 32 || code === 127) continue; // skip control/non-printable characters
+    noControlChars += input[i];
+  }
+  return noControlChars
+    .replace(/<[^>]*>/g, "") // strip tags
+    .trim()
+    .slice(0, maxLen);
+}
+
+// Every upload is checked against both of these before it's processed or stored.
+const MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // 15MB — generous for a lesson PDF, not for abuse
+const PDF_MAGIC = Buffer.from("%PDF");
+
+function isPdfBuffer(buffer: Buffer): boolean {
+  return buffer.length > PDF_MAGIC.length && buffer.subarray(0, PDF_MAGIC.length).equals(PDF_MAGIC);
 }
 
 async function extractPdfText(buffer: Buffer): Promise<string> {
@@ -239,8 +267,23 @@ app.post("/api/tts", async (req, res) => {
 app.post("/api/extract-pdf", async (req, res) => {
   const { base64Data } = req.body;
   if (!base64Data) return res.status(400).json({ error: "Missing base64Data." });
+
+  let buffer: Buffer;
   try {
-    const text = await extractPdfText(Buffer.from(base64Data, "base64"));
+    buffer = Buffer.from(base64Data, "base64");
+  } catch {
+    return res.status(400).json({ error: "Nevažeći fajl (neispravan base64)." });
+  }
+  if (buffer.length === 0) return res.status(400).json({ error: "Fajl je prazan." });
+  if (buffer.length > MAX_UPLOAD_BYTES) {
+    return res.status(413).json({ error: `Fajl je previše veliki (max ${MAX_UPLOAD_BYTES / 1024 / 1024}MB).` });
+  }
+  if (!isPdfBuffer(buffer)) {
+    return res.status(400).json({ error: "Fajl nije validan PDF." });
+  }
+
+  try {
+    const text = await extractPdfText(buffer);
     res.json({ text });
   } catch (error: any) {
     console.error("PDF extract error:", error.message);
@@ -289,8 +332,9 @@ app.get("/api/leaderboard", async (_req, res) => {
 });
 
 app.post("/api/leaderboard/upsert", async (req, res) => {
-  const { username, score } = req.body;
-  if (!username || score === undefined) {
+  const username = sanitizeText(req.body?.username, 50);
+  const score = Number(req.body?.score);
+  if (!username || !Number.isFinite(score)) {
     return res.status(400).json({ error: "Missing username or score." });
   }
   if (!supabase) return res.status(500).json({ error: "Supabase not configured." });
@@ -313,17 +357,45 @@ app.get("/api/documents", async (_req, res) => {
 
 app.post("/api/documents/upload", async (req, res) => {
   if (!supabase) return res.status(500).json({ error: "Supabase nije konfigurisan." });
-  const { name, subject, base64Data, mimeType } = req.body;
+
+  const name = sanitizeText(req.body?.name, 150);
+  const subject = sanitizeText(req.body?.subject, 100);
+  const { base64Data, mimeType } = req.body;
   if (!name || !base64Data || !mimeType) {
     return res.status(400).json({ error: "Nedostaju podaci." });
   }
+
+  // Only PDFs are accepted here — checked by declared type AND by the file's own
+  // magic bytes, so a mislabeled/renamed file can't slip through. The client's
+  // declared mimeType is never trusted for what actually gets stored (see below).
+  if (mimeType !== "application/pdf") {
+    return res.status(400).json({ error: "Samo PDF fajlovi su dozvoljeni." });
+  }
+
+  let fileBuffer: Buffer;
   try {
-    const fileBuffer = Buffer.from(base64Data, "base64");
+    fileBuffer = Buffer.from(base64Data, "base64");
+  } catch {
+    return res.status(400).json({ error: "Nevažeći fajl (neispravan base64)." });
+  }
+  if (fileBuffer.length === 0) return res.status(400).json({ error: "Fajl je prazan." });
+  if (fileBuffer.length > MAX_UPLOAD_BYTES) {
+    return res.status(413).json({ error: `Fajl je previše veliki (max ${MAX_UPLOAD_BYTES / 1024 / 1024}MB).` });
+  }
+  if (!isPdfBuffer(fileBuffer)) {
+    return res.status(400).json({ error: "Fajl nije validan PDF." });
+  }
+
+  try {
     const extractedText = await extractPdfText(fileBuffer);
     const storagePath = `${Date.now()}_${name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    // Storage is Supabase's object storage bucket — never the backend's own filesystem
+    // and never served as a static/executable path, so uploaded content can't be
+    // executed regardless of what's inside it. contentType is hardcoded here (not the
+    // client-supplied mimeType) since we've already verified this is a PDF.
     const { error: uploadError } = await supabase.storage
       .from("documents")
-      .upload(storagePath, fileBuffer, { contentType: mimeType });
+      .upload(storagePath, fileBuffer, { contentType: "application/pdf" });
     if (uploadError) return res.status(500).json({ error: uploadError.message });
     const { data, error: insertError } = await supabase
       .from("documents")

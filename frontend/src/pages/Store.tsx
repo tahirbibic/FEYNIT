@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2 } from 'lucide-react';
 import { STUDENTS } from '../data/students';
 import { useLanguage } from '../lib/language';
+import { playSound } from '../lib/sound';
 
 interface StoreProps {
   onBack: () => void;
@@ -56,10 +57,12 @@ export function Store({
       return;
     }
     if (unlockedStudents.includes(student.id)) {
+      playSound('/assets/sfx/equip.mp3'); // place your equip SFX file here
       setActiveStudentId(student.id);
       return;
     }
     if (iqPoints >= student.cost) {
+      playSound('/assets/sfx/coin-purchase.mp3'); // place your purchase SFX file here
       setIqPoints(prev => prev - student.cost);
       setUnlockedStudents(prev => [...prev, student.id]);
       setActiveStudentId(student.id);

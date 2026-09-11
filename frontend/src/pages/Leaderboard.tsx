@@ -19,7 +19,7 @@ interface LeaderboardProps {
 // so rows only need name + score. Percentages below are estimated from the artwork
 // (no pixel-perfect measurement tool available) — re-check against the real render and
 // nudge if a row's text doesn't sit on its plank.
-const ROW_CENTERS = [31, 43, 55, 67, 79];
+const ROW_CENTERS = [31, 43, 55.5, 68.2, 80.5];
 const BACK_BUTTON_TOP = 91;
 const TITLE_TOP = 16;
 

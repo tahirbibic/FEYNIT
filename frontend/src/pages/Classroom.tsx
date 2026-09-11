@@ -14,6 +14,10 @@ interface ContentPdf {
   name: string;
 }
 
+// Matches the backend's MAX_UPLOAD_BYTES — client-side check is just fail-fast UX,
+// the server is the actual enforcement boundary.
+const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
+
 // Cream/gold pixel-outline text, for labels sitting on dark wood/background hotspots.
 const PIXEL_LABEL_SHADOW = '-1px -1px 0 #3d2b1f, 1px -1px 0 #3d2b1f, -1px 1px 0 #3d2b1f, 1px 1px 0 #3d2b1f, 0 2px 3px rgba(0,0,0,0.6)';
 
@@ -51,6 +55,20 @@ export function Classroom({ onBack, onGoToGreenboard, onHandOutExam, lessonText,
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    // Fail fast client-side — the backend re-validates type/size regardless, this just
+    // avoids a wasted upload for an obviously-wrong file.
+    const isAllowedType = file.type === 'application/pdf' || file.type === 'text/plain' || file.type.startsWith('image/');
+    if (!isAllowedType) {
+      alert('Nepodržan tip fajla. Dozvoljeni su PDF, slika ili tekstualni fajl.');
+      event.target.value = '';
+      return;
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      alert(`Fajl je previše veliki (max ${MAX_UPLOAD_BYTES / 1024 / 1024}MB).`);
+      event.target.value = '';
+      return;
+    }
 
     setIsExtracting(true);
 

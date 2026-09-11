@@ -6,7 +6,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-38bdf8.svg?logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![Express](https://img.shields.io/badge/Express-4-lightgrey.svg?logo=express&logoColor=white)](https://expressjs.com)
 [![Supabase](https://img.shields.io/badge/Supabase-Database-emerald.svg?logo=supabase&logoColor=white)](https://supabase.com)
-[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-orange.svg?logo=openai&logoColor=white)](https://openai.com)
+[![Groq](https://img.shields.io/badge/Groq-LLM_%26_TTS-orange.svg?logoColor=white)](https://groq.com)
 
 **FEYNIT** is an interactive, gamified learning application designed around the **Feynman Technique** ("Explain it like I'm five"). By acting as a teacher and explaining complex topics to AI-powered students with distinct personalities, users deepen their own understanding. The game rewards clarity, penalizes jargon, and tests the student's absorption of the material via AI-generated exams.
 
@@ -32,7 +32,7 @@
 
 *   **Frontend**: React 19, TypeScript, Vite, Tailwind CSS 4, Motion (Framer Motion)
 *   **Backend**: Express 4, Node.js, TSX (TypeScript execution)
-*   **AI Integration**: OpenAI API (GPT-4o / Gemini-2.0-flash proxy), OpenAI TTS (voice), Web Speech API (speech-to-text)
+*   **AI Integration**: Groq (LLM chat via `openai/gpt-oss-120b`, TTS via Orpheus for English), Azure AI Speech (TTS for Serbian, since Orpheus has no Serbian voice), Web Speech API (speech-to-text)
 *   **Database & Auth**: Supabase (Leaderboard, Documents library, User stats cloud sync, Email Authentication)
 
 ---
@@ -63,13 +63,15 @@ Create the following configuration files in their respective folders:
 #### 📁 `backend/.env`
 ```env
 PORT=3001
-OPENAI_MODEL=gpt-4o
-OPENAI_API_KEY=your_openai_api_key
-GITHUB_TOKEN=your_optional_github_pat_token
+GROQ_API_KEY=your_groq_api_key
 
-# Supabase Configurations
+# Serbian TTS only — Groq's Orpheus voice model has no Serbian voice
+AZURE_SPEECH_KEY=your_azure_speech_key
+AZURE_SPEECH_REGION=your_azure_speech_region
+
+# Supabase Configurations — service role key (bypasses RLS), backend-only, never expose to the frontend
 SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 ```
 
 #### 📁 `frontend/.env.local`

@@ -11,6 +11,10 @@ interface BibliotekaDoc {
   name: string;
 }
 
+// Matches the backend's MAX_UPLOAD_BYTES — client-side check is just fail-fast UX,
+// the server is the actual enforcement boundary.
+const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
+
 interface StudentClassroomProps {
   onBack: () => void;
   onStartLearning: () => void;
@@ -32,6 +36,20 @@ export function StudentClassroom({ onBack, onStartLearning, lessonText, setLesso
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    // Fail fast client-side — the backend re-validates type/size regardless, this just
+    // avoids a wasted upload for an obviously-wrong file.
+    const isAllowedType = file.type === 'application/pdf' || file.type === 'text/plain' || file.type.startsWith('image/');
+    if (!isAllowedType) {
+      alert('Nepodržan tip fajla. Dozvoljeni su PDF, slika ili tekstualni fajl.');
+      event.target.value = '';
+      return;
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      alert(`Fajl je previše veliki (max ${MAX_UPLOAD_BYTES / 1024 / 1024}MB).`);
+      event.target.value = '';
+      return;
+    }
 
     setIsExtracting(true);
     try {

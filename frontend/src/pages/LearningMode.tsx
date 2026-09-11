@@ -24,7 +24,7 @@ export function LearningMode({ lessonText, onEndLearning, learningLevel }: Learn
   const [isReady, setIsReady] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [teacherState, setTeacherState] = useState<'neutral' | 'pointing' | 'talking'>('neutral');
+  const [teacherState, setTeacherState] = useState<'neutral' | 'talking' | 'thinking'>('neutral');
   const [sttSupported, setSttSupported] = useState(true);
   const [lectureTitle, setLectureTitle] = useState('');
   const [lectureBullets, setLectureBullets] = useState<string[]>([]);
@@ -39,19 +39,24 @@ export function LearningMode({ lessonText, onEndLearning, learningLevel }: Learn
   const isMutedRef = useRef(false);
 
   const speak = async (text: string) => {
-    if (isMutedRef.current) return;
-    if (lang === 'sr') return; // Professor stays silent in Serbian — no TTS voice for this mode.
-
     const cleanedText = text.replace(/\[.*?\]/g, '').trim();
-    if (!cleanedText) return;
+    if (!cleanedText) { setTeacherState('neutral'); return; }
+
+    // Text is on screen now — "talking" regardless of whether audio actually plays.
+    setTeacherState('talking');
+
+    if (isMutedRef.current || lang === 'sr') {
+      // No TTS voice for this mode in Serbian, or muted — hold "talking" briefly for the
+      // text to register, then rest.
+      setTimeout(() => setTeacherState('neutral'), 2000);
+      return;
+    }
 
     isSpeakingRef.current = true;
     if (isListeningRef.current) recognitionRef.current?.stop();
 
     try {
-      setTeacherState('pointing');
       const base64Audio = await generateTTS(cleanedText, 'professor-en', lang);
-      setTeacherState('talking');
       await playMp3Audio(base64Audio);
       setTeacherState('neutral');
     } catch (err) {
@@ -60,7 +65,6 @@ export function LearningMode({ lessonText, onEndLearning, learningLevel }: Learn
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(cleanedText);
         utterance.lang = 'en-US'; // this catch branch only runs for English — Serbian returns early above
-        utterance.onstart = () => setTeacherState('talking');
         const onSynthEnd = () => {
           setTeacherState('neutral');
           isSpeakingRef.current = false;
@@ -220,6 +224,7 @@ PRAVILA ZA PROFESORA:
     setInputText('');
     setMessages(prev => [...prev, { sender: 'student', text: userMessage }]);
     setIsLoading(true);
+    setTeacherState('thinking'); // AI is generating the response
 
     try {
       chatHistoryRef.current.push({ role: 'user', parts: [{ text: userMessage }] });
@@ -233,34 +238,42 @@ PRAVILA ZA PROFESORA:
       setMessages(prev => [...prev, { sender: 'teacher', text }]);
       const newBullets = extractBullets(text);
       if (newBullets.length > 0) setLectureBullets(prev => [...prev, ...newBullets]);
-      speak(text);
+      speak(text); // switches to "talking" while the response is shown/spoken
     } catch (err) {
       console.error(err);
       setMessages(prev => [...prev, { sender: 'teacher', text: "Oprosti, zamislio sam se. Možeš li ponoviti?" }]);
+      setTeacherState('neutral');
     }
     setIsLoading(false);
   };
 
   return (
     <div className="w-full h-full bg-black flex overflow-hidden relative font-sans">
+      {/* Background — fills the entire screen */}
       <div className="absolute inset-0 z-0">
+        <img src="/assets/teaching_bg.png" alt="" className="w-full h-full object-cover" />
+      </div>
+
+      {/* Professor — overlaid on the left side, state-driven, no background of its own */}
+      <div className="absolute inset-y-0 left-0 z-[1] flex items-end pointer-events-none">
         <AnimatePresence mode="wait">
           <motion.img
             key={teacherState}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            src={`/assets/professor-${teacherState === 'pointing' ? 'point' : teacherState === 'talking' ? 'talk' : 'neutral'}.jpg`}
+            transition={{ duration: 0.3 }}
+            src={`/assets/professor_${teacherState}.png`}
             alt="Profesor"
-            className="w-full h-full object-cover"
+            className="h-[65.31%] w-auto object-contain ml-[62%] mb-[30%]"
           />
         </AnimatePresence>
       </div>
 
 
       {lectureBullets.length > 0 && (
-        <div className="absolute top-6 z-20 p-3"
-          style={{ left: '25%', right: '19%', maxHeight: '45vh', overflowY: 'auto' }}
+        <div className="absolute z-20 p-3"
+          style={{ top: 'calc(1.5rem + 15%)', left: '35%', right: '29%', maxHeight: '45vh', overflowY: 'auto' }}
         >
           {lectureTitle && (
             <p className="text-center text-white text-sm font-bold uppercase tracking-widest mb-3"
@@ -278,7 +291,7 @@ PRAVILA ZA PROFESORA:
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
                   className="flex gap-2 leading-snug"
-                  style={{ color: 'rgba(255,255,255,0.92)', fontSize: '1rem', fontFamily: '"Fredoka", sans-serif', textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}
+                  style={{ color: 'rgba(255,255,255,0.92)', fontSize: '0.85rem', fontFamily: '"Fredoka", sans-serif', textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}
                 >
                   <span className="shrink-0 mt-0.5" style={{ color: 'rgba(255,255,255,0.7)' }}>–</span>
                   <span>{bullet}</span>

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
 import { useLanguage } from '../lib/language';
 import { PixelButton, PixelPanel } from '../components/ui/Pixel';
+import { playSound } from '../lib/sound';
 
 interface StartMenuProps {
   onEnterProfessor: () => void;
@@ -20,11 +21,13 @@ export function StartMenu({ onEnterProfessor, onEnterStudent, onStore, onLeaderb
   const [currentBg, setCurrentBg] = useState('/assets/menu-bg-open.jpg');
 
   const handleProfessorDoorClick = () => {
+    playSound('/assets/sfx/door-open.mp3'); // place your door SFX file here
     setCurrentBg('/assets/menu-bg-professor-open.jpg');
     setTimeout(() => setShowProfessorPrompt(true), 500);
   };
 
   const handleStudentDoorClick = () => {
+    playSound('/assets/sfx/door-open.mp3'); // place your door SFX file here
     setCurrentBg('/assets/menu-bg-student-open.jpg');
     setTimeout(() => setShowStudentPrompt(true), 500);
   };
@@ -42,6 +45,7 @@ export function StartMenu({ onEnterProfessor, onEnterStudent, onStore, onLeaderb
   };
 
   const handleBack = () => {
+    playSound('/assets/sfx/door-close.mp3'); // place your door-close SFX file here
     setShowProfessorPrompt(false);
     setShowStudentPrompt(false);
     setCurrentBg('/assets/menu-bg-open.jpg');
