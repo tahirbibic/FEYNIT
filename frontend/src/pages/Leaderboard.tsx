@@ -26,7 +26,7 @@ const TITLE_TOP = 16;
 // TEMP: flip to false to go back to real Supabase data. True fills the board with
 // varied fake accounts (long name, short name, etc.) purely to sanity-check that
 // row/back-button positions and text sizing hold up — remove once confirmed.
-const DEBUG_USE_DUMMY_DATA = false;
+const DEBUG_USE_DUMMY_DATA = true;
 const DUMMY_ENTRIES: LeaderboardEntry[] = [
   { name: 'Aleksandar Jovanović', score: 245 },
   { name: 'Milica', score: 198 },
