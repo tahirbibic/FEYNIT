@@ -20,7 +20,7 @@
     *   *Stefan* (Medium) — Understands things only through football analogies.
     *   *Jovana* (Medium) — Connects material to art, colors, and metaphors.
     *   *Viktor* (Hard) — Demands mathematical precision and rigorous logic.
-    *   *Prof. Vuk* (Extreme) — Arogant genius who rejects non-academic explanations.
+    *   *Vuk* (Extreme) — Arogant genius who rejects non-academic explanations.
 *   **Speech Recognition & Synthesis (STT/TTS)**: Talk to your students using real-time speech-to-text, and listen to their synthesized voice responses.
 *   **Automated Evaluation & Exams**: Administer custom multiple-choice exams. The AI student answers based on how well you explained the topic.
 *   **Pedagogical Analytics**: Get immediate, detailed feedback on your teaching style (what went well, what needs improvement, and your final pedagogical score).
